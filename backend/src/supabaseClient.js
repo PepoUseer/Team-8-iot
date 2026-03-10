@@ -4,12 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServerKey = process.env.SUPABASE_SECRET_KEY;
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && supabaseServiceRoleKey
+  supabaseUrl && supabaseServerKey
 );
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  ? createClient(supabaseUrl, supabaseServerKey)
   : null;

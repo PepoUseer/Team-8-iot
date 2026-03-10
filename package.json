@@ -1,0 +1,11 @@
+{
+  "name": "air-buddy",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.18.2",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter air-buddy-backend --filter air-buddy-frontend dev",
+    "dev:frontend": "pnpm --filter air-buddy-frontend dev",
+    "dev:backend": "pnpm --filter air-buddy-backend dev"
+  }
+}
