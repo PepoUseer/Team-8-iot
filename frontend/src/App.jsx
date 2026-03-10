@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api';
+const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 
 function App() {
   const [health, setHealth] = useState('Loading...');
@@ -34,7 +34,7 @@ function App() {
   return (
     <main className="app">
       <h1>Air Buddy</h1>
-      <p>Kazdy clovek se lepe soustredi, kdyz muze dychat cisty vzduch.</p>
+      <p>Každý člověk se lépe soustředí když může dýchat čistý vzduch.</p>
       <p>{health}</p>
     </main>
   );
