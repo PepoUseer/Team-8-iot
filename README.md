@@ -24,4 +24,4 @@ pnpm dev
 ## URLs
 
 - frontend: `http://localhost:5173`
-- backend health: `http://localhost:4000/health`
+- backend: `http://localhost:4000`
