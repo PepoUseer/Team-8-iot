@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { useEffect, useState } from "react";
+import "./App.css";
+import { LoginForm } from "./components/login-form";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 function App() {
-  const [health, setHealth] = useState('Loading...');
+  const [health, setHealth] = useState("Loading...");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -12,7 +13,7 @@ function App() {
     async function loadHealth() {
       try {
         const response = await fetch(`${apiUrl}/health`, {
-          signal: controller.signal
+          signal: controller.signal,
         });
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
@@ -21,8 +22,8 @@ function App() {
         const data = await response.json();
         setHealth(`API status: ${data.status}`);
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          setHealth('API is unreachable');
+        if (error.name !== "AbortError") {
+          setHealth("API is unreachable");
         }
       }
     }
@@ -35,6 +36,7 @@ function App() {
     <main className="app">
       <h1>Air Buddy</h1>
       <p>Každý člověk se lépe soustředí když může dýchat čistý vzduch.</p>
+      <LoginForm />
       <p>{health}</p>
     </main>
   );
