@@ -1,137 +1,559 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui;
-  /* shadcn variables will go here after init */
-}
-
-/* If you have custom global styles, put them below */
+/* ── Brand tokens ─────────────────────────────────────── */
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Backgrounds */
+  --ab-bg: #3c3d3e;
+  --ab-header: #38393b;
+  --ab-card: #5b5b5b;
+  --ab-tab-active: #434446;
+  --ab-tab-inactive: #5b5b5b;
+
+  /* Inputs */
+  --ab-input: #8f9293;
+  --ab-placeholder: #c4c4c4;
+
+  /* Accent (CTA buttons) */
+  --ab-accent: #9e7055;
+  --ab-accent-hover: #b8845f;
+
+  /* Cancel button */
+  --ab-cancel: #7b7b7b;
+
+  /* Status */
+  --ab-online: #22c55e;
+  --ab-offline: #ef4444;
+
+  /* Text */
+  --ab-text: #ffffff;
+  --ab-text-dim: rgba(255, 255, 255, 0.5);
+
+  /* Misc */
+  --ab-border-radius: 14px;
+  --ab-radius-btn: 10px;
+  --ab-radius-input: 5px;
+  --ab-radius-tab: 15px;
+
+  /* Fonts */
+  --font-logo: "Protest Riot", cursive;
+  --font-heading: "Sitara", Georgia, serif;
+  --font-body: "Smooch Sans", sans-serif;
 }
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+/* ── Reset / Base ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+body {
+  background: var(--ab-bg);
+  color: var(--ab-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+/* ── Typography helpers ───────────────────────────────── */
+.font-logo {
+  font-family: var(--font-logo);
+}
+.font-heading {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.font-body {
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+/* ── Layout ───────────────────────────────────────────── */
+.ab-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ───────────────────────────────────────────── */
+.ab-header {
+  background: var(--ab-header);
+  height: 88px;
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.ab-logo {
+  font-family: var(--font-logo);
+  font-size: 40px;
+  line-height: 1.2;
+  color: var(--ab-text);
+  letter-spacing: 0.01em;
+}
+
+.ab-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: var(--ab-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  color: var(--ab-text-dim);
+}
+.ab-user-avatar:hover {
+  border-color: var(--ab-text);
+  color: var(--ab-text);
+}
+
+/* ── Tabs (Login / Register) ──────────────────────────── */
+.ab-tabs {
+  display: flex;
+  position: relative;
+}
+
+.ab-tab {
+  padding: 10px 28px;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.6;
+  border-radius: var(--ab-radius-tab);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--ab-text);
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+  opacity: 0.5;
+}
+.ab-tab.active {
+  background: var(--ab-tab-active);
+  opacity: 1;
+}
+.ab-tab.inactive {
+  background: var(--ab-tab-inactive);
+}
+
+/* ── Auth card ────────────────────────────────────────── */
+.ab-auth-card {
+  background: var(--ab-card);
+  border-radius: var(--ab-border-radius);
+  padding: 28px 38px 36px;
+  width: 400px;
+  max-width: 100%;
+}
+
+.ab-auth-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  gap: 0;
+}
+
+/* ── Form inputs ──────────────────────────────────────── */
+.ab-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ab-text);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.ab-label span {
+  color: var(--ab-accent);
+  margin-left: 2px;
+}
+
+.ab-input {
+  width: 100%;
+  height: 43px;
+  background: var(--ab-input);
+  border: none;
+  border-radius: var(--ab-radius-input);
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ab-text);
+  outline: none;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.ab-input::placeholder {
+  color: var(--ab-placeholder);
+}
+.ab-input:focus {
+  background: #9fa3a4;
+  box-shadow: 0 0 0 2px rgba(158, 112, 85, 0.45);
+}
+
+.ab-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+/* ── CTA Button ───────────────────────────────────────── */
+.ab-btn {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--ab-accent);
+  border-radius: var(--ab-radius-btn);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ab-btn:hover {
+  background: var(--ab-accent-hover);
+}
+.ab-btn:active {
+  transform: translateY(1px);
+}
+
+/* Green state when form is filled */
+.ab-btn.ready {
+  background: #22c55e;
+  color: #fff;
+}
+.ab-btn.ready:hover {
+  background: #16a34a;
+}
+
+/* ── Cancel button ────────────────────────────────────── */
+.ab-btn-cancel {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--ab-cancel);
+  border-radius: var(--ab-radius-btn);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  color: #3c3d3e;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ab-btn-cancel:hover {
+  background: #8e8e8e;
+}
+
+/* ── Device cards ─────────────────────────────────────── */
+.ab-devices-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+}
+
+.ab-device-card {
+  width: 120px;
+  height: 120px;
+  background: var(--ab-card);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+  padding: 12px;
+  text-align: center;
+}
+.ab-device-card:hover {
+  transform: translateY(-2px);
+}
+.ab-device-card.online {
+  border-color: var(--ab-online);
+}
+.ab-device-card.offline {
+  border-color: var(--ab-offline);
+}
+
+.ab-device-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-text);
+  line-height: 1.3;
+}
+
+.ab-device-status {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ab-device-status.online {
+  color: var(--ab-online);
+}
+.ab-device-status.offline {
+  color: var(--ab-offline);
+}
+
+.ab-add-device-card {
+  width: 120px;
+  height: 120px;
+  background: var(--ab-card);
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+  color: rgba(255, 255, 255, 0.4);
+}
+.ab-add-device-card:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+/* ── Main content area ────────────────────────────────── */
+.ab-main {
+  flex: 1;
+  background: var(--ab-card);
+  border-radius: var(--ab-border-radius);
+  margin: 24px;
+  overflow: hidden;
+}
+
+.ab-nav-tabs {
+  display: flex;
+  background: var(--ab-header);
+  padding: 0 20px;
+  gap: 4px;
+  align-items: center;
+}
+
+.ab-nav-tab {
+  padding: 14px 24px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.ab-nav-tab.active {
+  color: var(--ab-text);
+  border-bottom-color: var(--ab-accent);
+}
+
+/* ── Gauge ────────────────────────────────────────────── */
+.ab-gauge-card {
+  background: var(--ab-tab-active);
+  border-radius: 10px;
+  padding: 16px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.ab-gauge-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.ab-gauge-value {
+  font-family: var(--font-body);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ab-text);
+  text-align: center;
+}
+
+.ab-gauge-value sup {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+/* ── Modal overlay ────────────────────────────────────── */
+.ab-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
   }
-  body {
-    @apply bg-background text-foreground;
+  to {
+    opacity: 1;
   }
-  html {
-    @apply font-sans;
+}
+
+.ab-modal {
+  background: var(--ab-card);
+  border-radius: var(--ab-border-radius);
+  padding: 28px 32px 32px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  position: relative;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ab-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--ab-text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.ab-modal-close:hover {
+  color: var(--ab-text);
+}
+
+.ab-modal-title {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ab-text);
+  margin-bottom: 20px;
+}
+
+.ab-modal-subtitle {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ab-text);
+  margin: 18px 0 10px;
+}
+
+/* ── Graph area ───────────────────────────────────────── */
+.ab-graph-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.ab-graph-card {
+  background: var(--ab-tab-active);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.ab-graph-title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ab-text);
+  margin-bottom: 10px;
+}
+
+/* ── Settings range row ───────────────────────────────── */
+.ab-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ab-range-input {
+  width: 108px;
+  height: 39px;
+  background: var(--ab-input);
+  border: none;
+  border-radius: var(--ab-radius-input);
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  text-align: center;
+  outline: none;
+}
+.ab-range-input:focus {
+  background: #9fa3a4;
+  color: var(--ab-text);
+}
+
+.ab-range-sep {
+  font-family: var(--font-body);
+  font-size: 28px;
+  color: var(--ab-placeholder);
+  line-height: 1;
+}
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ab-input);
+  border-radius: 3px;
 }
