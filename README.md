@@ -7,7 +7,7 @@ Každý člověk se lépe soustředí když může dýchat čistý vzduch. Pokud
 ## Stack
 
 - Frontend: `React` + `Vite`
-- Backend: `Express` + `Supabase`
+- Backend: `Express` + `PostgreSQL`
 - Package manager: `pnpm` workspace
 
 ## Setup
