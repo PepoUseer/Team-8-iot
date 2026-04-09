@@ -6,9 +6,9 @@ Každý člověk se lépe soustředí když může dýchat čistý vzduch. Pokud
 
 ## Stack
 
-- frontend: `React` + `Vite`
-- backend: `Express` + `Supabase`
-- package manager: `pnpm` workspace
+- Frontend: `React` + `Vite`
+- Backend: `Express` + `PostgreSQL`
+- Package manager: `pnpm` workspace
 
 ## Setup
 
@@ -23,5 +23,5 @@ pnpm dev
 
 ## URLs
 
-- frontend: `http://localhost:5173`
-- backend health: `http://localhost:4000/health`
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:4000`
