@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS users (
 -- 2. Devices Table
 CREATE TABLE IF NOT EXISTS devices (
     device_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    mac_address MACADDR NOT NULL UNIQUE,
     device_name VARCHAR(100),
     last_update TIMESTAMPTZ
 );
