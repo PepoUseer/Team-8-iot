@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export function SignInPage({ onLogin }) {
-  const [tab, setTab] = useState("login"); // "login" | "register"
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") ?? "login"; // "login" | "register"
+
+  const switchTab = (t) => setSearchParams({ tab: t });
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -12,7 +16,6 @@ export function SignInPage({ onLogin }) {
   const [regPassword, setRegPassword] = useState("");
   const [regPassword2, setRegPassword2] = useState("");
 
-  // Button turns green when all fields filled
   const loginReady = loginEmail.trim() !== "" && loginPassword.trim() !== "";
   const registerReady =
     regEmail.trim() !== "" &&
@@ -42,14 +45,14 @@ export function SignInPage({ onLogin }) {
         <button
           className={`ab-tab ${tab === "login" ? "active" : "inactive"}`}
           style={{ flex: 1 }}
-          onClick={() => setTab("login")}
+          onClick={() => switchTab("login")}
         >
           Login
         </button>
         <button
           className={`ab-tab ${tab === "register" ? "active" : "inactive"}`}
           style={{ flex: 1 }}
-          onClick={() => setTab("register")}
+          onClick={() => switchTab("register")}
         >
           Register
         </button>

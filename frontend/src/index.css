@@ -127,7 +127,8 @@ body {
   font-size: 28px;
   font-weight: 700;
   line-height: 1.6;
-  border-radius: var(--ab-radius-tab);
+
+  border-radius: var(--ab-radius-tab) var(--ab-radius-tab) 0 0;
   cursor: pointer;
   border: none;
   background: transparent;
@@ -138,7 +139,7 @@ body {
   opacity: 0.5;
 }
 .ab-tab.active {
-  background: var(--ab-tab-active);
+  background: var(--ab-card);
   opacity: 1;
 }
 .ab-tab.inactive {
@@ -148,7 +149,8 @@ body {
 /* ── Auth card ────────────────────────────────────────── */
 .ab-auth-card {
   background: var(--ab-card);
-  border-radius: var(--ab-border-radius);
+
+  border-radius: 0 0 var(--ab-border-radius) var(--ab-border-radius);
   padding: 28px 38px 36px;
   width: 400px;
   max-width: 100%;
@@ -170,6 +172,10 @@ body {
   color: var(--ab-text);
   margin-bottom: 4px;
   display: block;
+
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ab-label span {
