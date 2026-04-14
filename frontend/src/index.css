@@ -56,6 +56,7 @@ body {
   color: var(--ab-text);
   font-family: var(--font-body);
   min-height: 100vh;
+  cursor: default;
 }
 
 /* ── Typography helpers ───────────────────────────────── */
@@ -87,6 +88,8 @@ body {
   padding: 0 30px;
   justify-content: space-between;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ab-logo {
@@ -95,6 +98,9 @@ body {
   line-height: 1.2;
   color: var(--ab-text);
   letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
 }
 
 .ab-user-avatar {
@@ -119,6 +125,8 @@ body {
 .ab-tabs {
   display: flex;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .ab-tab {
@@ -137,6 +145,8 @@ body {
     background 0.2s,
     opacity 0.2s;
   opacity: 0.5;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ab-tab.active {
   background: var(--ab-card);
@@ -149,7 +159,9 @@ body {
 /* ── Auth card ────────────────────────────────────────── */
 .ab-auth-card {
   background: var(--ab-card);
-
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
   border-radius: 0 0 var(--ab-border-radius) var(--ab-border-radius);
   padding: 28px 38px 36px;
   width: 400px;
@@ -184,6 +196,7 @@ body {
 }
 
 .ab-input {
+  cursor: text;
   width: 100%;
   height: 43px;
   background: var(--ab-input);
@@ -212,6 +225,9 @@ body {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 18px;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ── CTA Button ───────────────────────────────────────── */
@@ -233,6 +249,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ab-btn:hover {
   background: var(--ab-accent-hover);
@@ -266,6 +284,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ab-btn-cancel:hover {
   background: #8e8e8e;
@@ -562,4 +582,15 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--ab-input);
   border-radius: 3px;
+}
+
+/* ── 1280px resolution ────────────────────────────────── */
+html,
+body {
+  min-width: 1280px;
+}
+
+.ab-page {
+  min-width: 1280px;
+  width: 100%;
 }

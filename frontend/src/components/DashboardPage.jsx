@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { GaugeChart } from "@/components/GaugeChart";
 import { LineGraph } from "@/components/LineGraph";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -20,7 +20,7 @@ function generateMockReading(prev) {
 const HISTORY_MAX = 50; // keep last 50 readings in graph
 const POLL_MS = 5000; // refresh every 5 s (swap for real API)
 
-export function DashboardPage({ device, onBack }) {
+export function DashboardPage({ device, user, onBack }) {
   const [tab, setTab] = useState("current"); // "current" | "graph"
   const [graphRange, setGraphRange] = useState("week"); // "day" | "week" | "month"
   const [reading, setReading] = useState(generateMockReading(null));
@@ -69,6 +69,15 @@ export function DashboardPage({ device, onBack }) {
     return "#22c55e";
   };
 
+  // Get initials from email for avatar
+  const getInitials = (email) => {
+    if (!email) return null;
+    const local = email.split("@")[0];
+    return local.slice(0, 2).toUpperCase();
+  };
+
+  const initials = user ? getInitials(user.email) : null;
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {/* Nav tabs row */}
@@ -88,16 +97,40 @@ export function DashboardPage({ device, onBack }) {
           </button>
         </div>
 
-        {/* User avatar placeholder (already in header) */}
+        {/* User avatar with initials or icon */}
         <div
+          title={user?.email}
           style={{
             width: 36,
             height: 36,
             borderRadius: "50%",
-            border: "2px solid rgba(255,255,255,0.2)",
-            background: "transparent",
+            border: "2px solid rgba(255,255,255,0.25)",
+            background: "var(--ab-card)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--ab-text-dim)",
+            fontSize: "13px",
+            fontWeight: 700,
+            fontFamily: "var(--font-body)",
+            userSelect: "none",
+            flexShrink: 0,
           }}
-        />
+        >
+          {initials ? (
+            <span
+              style={{
+                color: "var(--ab-text)",
+                fontSize: "12px",
+                fontWeight: 700,
+              }}
+            >
+              {initials}
+            </span>
+          ) : (
+            <User size={18} />
+          )}
+        </div>
       </div>
 
       {/* Device title row */}

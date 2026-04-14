@@ -67,6 +67,7 @@ function AppRoutes() {
             user && selectedDevice ? (
               <DashboardPage
                 device={selectedDevice}
+                user={user}
                 onBack={() => navigate("/devices")}
               />
             ) : (
