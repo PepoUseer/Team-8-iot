@@ -1,7 +1,6 @@
 import cors from 'cors';
 import express from 'express';
 import dotenv from 'dotenv';
-import { isSupabaseConfigured } from './supabaseClient.js';
 
 dotenv.config();
 
@@ -19,7 +18,6 @@ app.use(express.json());
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
-    supabaseConfigured: isSupabaseConfigured,
     timestamp: new Date().toISOString()
   });
 });
