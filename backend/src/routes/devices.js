@@ -1,8 +1,12 @@
 import express from "express";
 const router = express.Router();
 
+import DeviceController from "../controllers/deviceController.js";
+const dc = new DeviceController();
+
 router.get("/");
-router.post("/");
+router.get("/:id", dc.get.bind(dc));
+router.post("/", dc.create.bind(dc));
 router.patch("/:id");
 router.get("/:id/sensors");
 router.post("/add");
