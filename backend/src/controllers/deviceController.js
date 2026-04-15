@@ -1,0 +1,78 @@
+import ControllerBase from "./controllerBase.js";
+import deviceService from "../services/deviceService.js";
+
+
+class DeviceController extends ControllerBase {
+    service = deviceService;
+    entityName = "Device";
+    /**
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async get(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" }
+            },
+            required: ["id"],
+            additionalProperties: false
+        };
+        try {
+            const validationResult = this.validate(schema, req.params);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const device = await this.service.get(req.params.id);
+            if (!device) {
+                return next(this.notFoundError());
+            }
+
+            return res.status(200).json(device);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async create(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                sensors: { 
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            sensorType: { type: "string" },
+                            unit: { type: "string" }
+                        },
+                    },
+                }
+            },
+            required: ["sensors"],
+            additionalProperties: false
+        };
+        try {
+            const validationResult = this.validate(schema, req.body);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const device = await this.service.create({
+                sensors: req.body.sensors
+            });
+            return res.status(200).json(device);
+        } catch (error) {
+            return next(error);
+        }
+    }
+}
+
+export default DeviceController;
