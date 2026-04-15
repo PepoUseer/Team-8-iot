@@ -6,6 +6,17 @@ class Database {
         this.pool = new Pool({
             connectionString: process.env.DATABASE_URL
         });
+        this.verifyConnection();
+    }
+
+    async verifyConnection() {
+        try {
+            const client = await this.pool.connect();
+            client.release();
+        } catch (err) {
+            console.error("Database connection error:", err.stack);
+            process.exit(1);
+    }
     }
 
     async query(text, params) {
