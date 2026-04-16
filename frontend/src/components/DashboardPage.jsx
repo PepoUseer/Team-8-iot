@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Settings, User } from "lucide-react";
-import { GaugeChart } from "@/components/GaugeChart";
-import { LineGraph } from "@/components/LineGraph";
+import { useNavigate, useLocation } from "react-router-dom";
+import { GaugeCard } from "@/components/GaugeCard";
+import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 
 // ── Mock data generator ─────────────────────────────────
@@ -17,23 +18,31 @@ function generateMockReading(prev) {
   };
 }
 
-const HISTORY_MAX = 50; // keep last 50 readings in graph
 const POLL_MS = 5000; // refresh every 5 s (swap for real API)
 
+// ── Range → milliseconds map ────────────────────────────
+const RANGE_MS = {
+  day: 24 * 60 * 60 * 1000,
+  week: 7 * 24 * 60 * 60 * 1000,
+  month: 30 * 24 * 60 * 60 * 1000,
+};
+
 export function DashboardPage({ device, user, onBack }) {
-  const [tab, setTab] = useState("current"); // "current" | "graph"
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive active tab from the current route
+  const isGraphs = location.pathname === "/graphs";
+  const tab = isGraphs ? "graph" : "current";
+
   const [graphRange, setGraphRange] = useState("week"); // "day" | "week" | "month"
+
+  // rangeHistory holds the data shown in graphs.
+  // Right now it is mock data spread across the selected time window.
+  // When real historical data arrives, replace this with the API response.
+  const [rangeHistory, setRangeHistory] = useState([]);
+
   const [reading, setReading] = useState(generateMockReading(null));
-  const [history, setHistory] = useState(() => {
-    // Pre-populate graph with 20 fake points
-    const pts = [];
-    let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
-    for (let i = 0; i < 20; i++) {
-      r = generateMockReading(r);
-      pts.push({ ...r, timestamp: Date.now() - (20 - i) * POLL_MS });
-    }
-    return pts;
-  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [limits, setLimits] = useState({
     co2: { min: 350, max: 1000 },
@@ -44,17 +53,47 @@ export function DashboardPage({ device, user, onBack }) {
 
   const intervalRef = useRef(null);
 
-  // Polling (replace fetch mock with real API call)
+  // ── Live polling (current values tab only) ─────────────
+  // Replaces the mock setInterval with a real fetch when the backend is ready.
   useEffect(() => {
     intervalRef.current = setInterval(() => {
-      setReading((prev) => {
-        const next = generateMockReading(prev);
-        setHistory((h) => [...h.slice(-HISTORY_MAX + 1), next]);
-        return next;
-      });
+      setReading((prev) => generateMockReading(prev));
     }, POLL_MS);
     return () => clearInterval(intervalRef.current);
   }, [device]);
+
+  // ── Range-based history fetch ───────────────────────────
+  // Fires whenever the selected range or device changes.
+  // NOW:   generates 40 mock points spread evenly across the selected window
+  //        so the buttons produce visibly different graphs right away.
+  // LATER: swap the body of this effect for a real API call, e.g.:
+  //
+  //   /* FUTURE API FETCH – uncomment and fill in when backend is ready:
+  //
+  //   setRangeHistory([]);          // clear while loading
+  //   const from = new Date(Date.now() - RANGE_MS[graphRange]).toISOString();
+  //   const to   = new Date().toISOString();
+  //
+  //   const res  = await fetch(
+  //     `${import.meta.env.VITE_API_URL}/devices/${device.id}/readings` +
+  //     `?from=${from}&to=${to}`
+  //   );
+  //   const data = await res.json();   // expected: array of { timestamp, co2, temperature, humidity, pressure }
+  //   setRangeHistory(data);
+  //
+  //   */
+  useEffect(() => {
+    const MOCK_POINTS = 40;
+    const windowMs = RANGE_MS[graphRange];
+    const step = windowMs / (MOCK_POINTS - 1);
+    const pts = [];
+    let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
+    for (let i = 0; i < MOCK_POINTS; i++) {
+      r = generateMockReading(r);
+      pts.push({ ...r, timestamp: Date.now() - windowMs + i * step });
+    }
+    setRangeHistory(pts);
+  }, [graphRange, device]);
 
   const lastUpdated = new Date(reading.timestamp).toLocaleTimeString("cs-CZ", {
     hour: "2-digit",
@@ -85,13 +124,13 @@ export function DashboardPage({ device, user, onBack }) {
         <div style={{ display: "flex" }}>
           <button
             className={`ab-nav-tab ${tab === "current" ? "active" : ""}`}
-            onClick={() => setTab("current")}
+            onClick={() => navigate("/dashboard")}
           >
             current values
           </button>
           <button
             className={`ab-nav-tab ${tab === "graph" ? "active" : ""}`}
-            onClick={() => setTab("graph")}
+            onClick={() => navigate("/graphs")}
           >
             values in graph
           </button>
@@ -285,36 +324,9 @@ export function DashboardPage({ device, user, onBack }) {
               </button>
             ))}
           </div>
-          <div className="ab-graph-grid">
-            <LineGraph
-              title="CO2 concentration"
-              data={history}
-              field="co2"
-              unit="ppm"
-              color="#f97316"
-            />
-            <LineGraph
-              title="Temperature"
-              data={history}
-              field="temperature"
-              unit="°C"
-              color="#3b82f6"
-            />
-            <LineGraph
-              title="Humidity"
-              data={history}
-              field="humidity"
-              unit="%"
-              color="#ef4444"
-            />
-            <LineGraph
-              title="Barometric pressure"
-              data={history}
-              field="pressure"
-              unit="hPa"
-              color="#22c55e"
-            />
-          </div>
+
+          {/* Pass rangeHistory (filtered by time window) instead of the raw buffer */}
+          <GraphsPage history={rangeHistory} graphRange={graphRange} />
         </div>
       )}
 
@@ -329,81 +341,6 @@ export function DashboardPage({ device, user, onBack }) {
           onClose={() => setSettingsOpen(false)}
         />
       )}
-    </div>
-  );
-}
-
-/* ── Gauge card with SVG arc ─────────────────────────── */
-function GaugeCard({ label, value, unit, color, max, current }) {
-  const pct = Math.min(current / max, 1);
-  // Arc params
-  const r = 52,
-    cx = 64,
-    cy = 64;
-  const startAngle = -210,
-    endAngle = 30; // degrees
-  const toRad = (d) => (d * Math.PI) / 180;
-  const arc = (a) => [cx + r * Math.cos(toRad(a)), cy + r * Math.sin(toRad(a))];
-  const totalAngle = endAngle - startAngle; // 240
-  const currentAngle = startAngle + totalAngle * pct;
-
-  const [sx, sy] = arc(startAngle);
-  const [ex, ey] = arc(currentAngle);
-  const largeArc = totalAngle * pct > 180 ? 1 : 0;
-
-  // Track arc (grey)
-  const [tsx, tsy] = arc(startAngle);
-  const [tex, tey] = arc(endAngle);
-
-  return (
-    <div className="ab-gauge-card">
-      <span className="ab-gauge-label">{label}</span>
-      <svg
-        width="128"
-        height="90"
-        viewBox="0 0 128 90"
-        style={{ overflow: "visible" }}
-      >
-        {/* Track */}
-        <path
-          d={`M ${tsx} ${tsy} A ${r} ${r} 0 1 1 ${tex} ${tey}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.12)"
-          strokeWidth="10"
-          strokeLinecap="round"
-        />
-        {/* Progress */}
-        {pct > 0 && (
-          <path
-            d={`M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}`}
-            fill="none"
-            stroke={color}
-            strokeWidth="10"
-            strokeLinecap="round"
-          />
-        )}
-        <text
-          x={cx}
-          y={cy + 6}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize="20"
-          fontWeight="700"
-          fontFamily="var(--font-body)"
-        >
-          {value}
-        </text>
-        <text
-          x={cx}
-          y={cy + 22}
-          textAnchor="middle"
-          fill="var(--ab-placeholder)"
-          fontSize="11"
-          fontFamily="var(--font-body)"
-        >
-          {unit}
-        </text>
-      </svg>
     </div>
   );
 }

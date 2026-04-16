@@ -32,6 +32,13 @@ function AppRoutes() {
     navigate("/auth");
   };
 
+  // Shared dashboard props
+  const dashboardProps = {
+    device: selectedDevice,
+    user,
+    onBack: () => navigate("/devices"),
+  };
+
   return (
     <div className="ab-page">
       <Header
@@ -47,7 +54,7 @@ function AppRoutes() {
         {/* Single auth route – tab is a query param: /auth?tab=login or /auth?tab=register */}
         <Route path="/auth" element={<SignInPage onLogin={handleLogin} />} />
 
-        {/* Protected routes, redirect to /auth if no user) */}
+        {/* Protected routes, redirect to /auth if no user */}
         <Route
           path="/devices"
           element={
@@ -65,11 +72,17 @@ function AppRoutes() {
           path="/dashboard"
           element={
             user && selectedDevice ? (
-              <DashboardPage
-                device={selectedDevice}
-                user={user}
-                onBack={() => navigate("/devices")}
-              />
+              <DashboardPage {...dashboardProps} />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
+        />
+        <Route
+          path="/graphs"
+          element={
+            user && selectedDevice ? (
+              <DashboardPage {...dashboardProps} />
             ) : (
               <Navigate to="/auth" replace />
             )
