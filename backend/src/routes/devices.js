@@ -7,7 +7,7 @@ const dc = new DeviceController();
 router.get("/");
 router.get("/:id", dc.get.bind(dc));
 router.post("/", dc.create.bind(dc));
-router.patch("/:id");
+router.patch("/:id", dc.update.bind(dc));
 router.get("/:id/sensors");
 router.post("/add");
 router.get("/:id/latest");

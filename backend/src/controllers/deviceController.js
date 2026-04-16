@@ -65,10 +65,42 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
-            const device = await this.service.create({
-                sensors: req.body.sensors
-            });
+            const device = await this.service.create(req.body.sensors);
             return res.status(200).json(device);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async update(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" },
+                deviceName: { type: "string" }
+            },
+            required: ["id"],
+            additionalProperties: false
+        };
+        try {
+            const params = { ...req.body, ...req.params};
+            const validationResult = this.validate(schema, params);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const updatedDevice = await this.service.update(params.id, params.deviceName);
+
+            if (!updatedDevice) {
+                return next(this.notFoundError());
+            }
+
+            return res.status(200).json(updatedDevice);
         } catch (error) {
             return next(error);
         }
