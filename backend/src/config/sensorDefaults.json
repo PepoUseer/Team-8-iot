@@ -1,22 +1,22 @@
 {
   "temperature": {
     "unit": "°C",
-    "threshold_min": 0,
-    "threshold_max": 50
+    "threshold_min": 20,
+    "threshold_max": 26
   },
   "humidity": {
     "unit": "%",
-    "threshold_min": 0,
-    "threshold_max": 100
+    "threshold_min": 40,
+    "threshold_max": 60
   },
   "co2": {
     "unit": "ppm",
-    "threshold_min": 0,
-    "threshold_max": 5000
+    "threshold_min": 350,
+    "threshold_max": 1000
   },
   "pressure": {
     "unit": "hPa",
-    "threshold_min": 900,
-    "threshold_max": 1100
+    "threshold_min": 1000,
+    "threshold_max": 1020
   }
 }
