@@ -1,10 +1,11 @@
 import ControllerBase from "./controllerBase.js";
-import deviceService from "../services/deviceService.js";
+import sensorService from "../services/sensorService.js";
+import sensorDefaults from "../config/sensorDefaults.json" with { type: "json" };
 
 
-class DeviceController extends ControllerBase {
-    service = deviceService;
-    entityName = "Device";
+class SensorController extends ControllerBase {
+    service = sensorService;
+    entityName = "Sensor";
     /**
      * @param {import("express").Request} req - Express request
      * @param {import("express").Response} res - Express response
@@ -25,39 +26,12 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
-            const device = await this.service.get(req.params.id);
-            if (!device) {
+            const sensor = await this.service.get(req.params.id);
+            if (!sensor) {
                 return next(this.notFoundError());
             }
 
-            return res.status(200).json(device);
-        } catch (error) {
-            return next(error);
-        }
-    }
-
-    /**
-     * @param {import("express").Request} req - Express request
-     * @param {import("express").Response} res - Express response
-     * @param {import("express").NextFunction} next - Next function
-     */
-    async getSensors(req, res, next) {
-        const schema = {
-            type: "object",
-            properties: {
-                id: { type: "string" }
-            },
-            required: ["id"],
-            additionalProperties: false
-        };
-        try {
-            const validationResult = this.validate(schema, req.params);
-            if (!validationResult.success) {
-                return next(validationResult.errorDetails);
-            }
-
-            const sensors = await this.service.getSensors(req.params.id);
-            return res.status(200).json(sensors);
+            return res.status(200).json(sensor);
         } catch (error) {
             return next(error);
         }
@@ -72,18 +46,13 @@ class DeviceController extends ControllerBase {
         const schema = {
             type: "object",
             properties: {
-                sensors: { 
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            sensorType: { type: "string" },
-                            unit: { type: "string" }
-                        },
-                    },
-                }
+                deviceId: { type: "string" },
+                sensorType: { type: "string" },
+                unit: { type: "string" },
+                thresholdMin: { type: "number" },
+                thresholdMax: { type: "number" }
             },
-            required: ["sensors"],
+            required: ["deviceId", "sensorType", "unit"],
             additionalProperties: false
         };
         try {
@@ -91,9 +60,16 @@ class DeviceController extends ControllerBase {
             if (!validationResult.success) {
                 return next(validationResult.errorDetails);
             }
+            const defaults = sensorDefaults[req.body.sensorType];
 
-            const device = await this.service.create(req.body.sensors);
-            return res.status(201).json(device);
+            const sensor = await this.service.create(
+                req.body.deviceId,
+                req.body.sensorType,
+                req.body.unit,
+                req.body.thresholdMin || defaults.threshold_min || 0,
+                req.body.thresholdMax || defaults.threshold_max || 0
+            );
+            return res.status(201).json(sensor);
         } catch (error) {
             return next(error);
         }
@@ -109,7 +85,10 @@ class DeviceController extends ControllerBase {
             type: "object",
             properties: {
                 id: { type: "string" },
-                deviceName: { type: "string" }
+                sensorType: { type: "string" },
+                unit: { type: "string" },
+                thresholdMin: { type: "number" },
+                thresholdMax: { type: "number" }
             },
             required: ["id"],
             additionalProperties: false
@@ -121,13 +100,18 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
-            const updatedDevice = await this.service.update(params.id, params.deviceName);
+            const updatedSensor = await this.service.update(params.id, {
+                sensorType: params.sensorType,
+                unit: params.unit,
+                thresholdMin: params.thresholdMin,
+                thresholdMax: params.thresholdMax
+            });
 
-            if (!updatedDevice) {
+            if (!updatedSensor) {
                 return next(this.notFoundError());
             }
 
-            return res.status(200).json(updatedDevice);
+            return res.status(200).json(updatedSensor);
         } catch (error) {
             return next(error);
         }
@@ -153,9 +137,9 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
-            const device = await this.service.get(req.params.id);
+            const sensor = await this.service.get(req.params.id);
 
-            if (!device) {
+            if (!sensor) {
                 return next(this.notFoundError());
             }
 
@@ -168,4 +152,4 @@ class DeviceController extends ControllerBase {
     }
 }
 
-export default DeviceController;
+export default SensorController;

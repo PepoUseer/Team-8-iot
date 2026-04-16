@@ -13,9 +13,11 @@ app.use(
 );
 app.use(express.json());
 
-import devicesRouter from './routes/devices.js';
+import devicesRouter from "./routes/devices.js";
+import sensorRouter from "./routes/sensors.js";
 
 app.use("/devices", devicesRouter);
+app.use("/sensors", sensorRouter);
 
 app.get("/health", (_req, res) => {
     res.json({
