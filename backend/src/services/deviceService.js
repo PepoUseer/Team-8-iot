@@ -36,11 +36,24 @@ class DeviceService {
      */
     async update(id, deviceName) {
         const queryText = `UPDATE devices
-       SET device_name = COALESCE($2, device_name)
-       WHERE device_id = $1
-       RETURNING device_id, device_name, last_update`;
-       const result = await db.query(queryText, [id, deviceName]);
-       return result.rows[0] || null;
+            SET device_name = COALESCE($2, device_name)
+            WHERE device_id = $1
+            RETURNING device_id, device_name, last_update
+        `;
+        const result = await db.query(queryText, [id, deviceName]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * 
+     * @param {string} id 
+     */
+    async delete(id) {
+        const queryText = `DELETE FROM devices 
+            WHERE device_id = $1 RETURNING device_id
+        `;
+        const result = await db.query(queryText, [id]);
+        return result.rows[0] || null;
     }
 }
 

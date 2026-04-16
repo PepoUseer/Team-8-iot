@@ -66,7 +66,7 @@ class DeviceController extends ControllerBase {
             }
 
             const device = await this.service.create(req.body.sensors);
-            return res.status(200).json(device);
+            return res.status(201).json(device);
         } catch (error) {
             return next(error);
         }
@@ -101,6 +101,40 @@ class DeviceController extends ControllerBase {
             }
 
             return res.status(200).json(updatedDevice);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async delete(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" }
+            },
+            required: ["id"],
+            additionalProperties: false
+        };
+        try {
+            const validationResult = this.validate(schema, req.params);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const device = await this.service.get(req.params.id);
+
+            if (!device) {
+                return next(this.notFoundError());
+            }
+
+            await this.service.delete(req.params.id);
+
+            return res.sendStatus(204);
         } catch (error) {
             return next(error);
         }

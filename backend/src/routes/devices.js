@@ -11,5 +11,6 @@ router.patch("/:id", dc.update.bind(dc));
 router.get("/:id/sensors");
 router.post("/add");
 router.get("/:id/latest");
+router.delete("/:id", dc.delete.bind(dc));
 
 export default router;
