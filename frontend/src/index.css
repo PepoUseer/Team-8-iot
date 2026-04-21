@@ -588,9 +588,74 @@ body {
 html,
 body {
   min-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+body {
+  width: 100%;
 }
 
 .ab-page {
+  width: 1280px;
   min-width: 1280px;
-  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Wrapper kolem inputu a jednotky */
+.ab-range-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Jednotka vedle inputu (ppm, °C, %, hPa) */
+.ab-range-unit {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  white-space: nowrap;
+  min-width: 28px;
+}
+
+/* ── Aby neklikal kurzor po kliknutí kdekoliv na obrazovce ── */
+.ab-gauge-card,
+.ab-gauge-label,
+.ab-gauge-value,
+.ab-device-card,
+.ab-device-name,
+.ab-device-status,
+.ab-nav-tab,
+.ab-btn,
+.ab-btn-cancel {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Globální fix textového kurzoru ── */
+* {
+  cursor: default !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Výjimky */
+input,
+textarea {
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+button,
+a,
+.ab-device-card,
+.ab-add-device-card,
+[role="button"],
+[onClick],
+[style*="cursor: pointer"] {
+  cursor: pointer !important;
 }

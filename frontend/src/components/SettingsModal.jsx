@@ -53,28 +53,24 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
               {
                 key: "co2",
                 label: "CO2 concentration",
-                unitMin: "ppm",
-                unitMax: "ppm",
+                unit: "ppm",
               },
               {
                 key: "humidity",
                 label: "Humidity",
-                unitMin: "%",
-                unitMax: "%",
+                unit: "%",
               },
               {
                 key: "temperature",
                 label: "Temperature",
-                unitMin: "°C",
-                unitMax: "°C",
+                unit: "°C",
               },
               {
                 key: "pressure",
                 label: "Barometric pressure",
-                unitMin: "hPa",
-                unitMax: "hPa",
+                unit: "hPa",
               },
-            ].map(({ key, label, unitMin, unitMax }) => (
+            ].map(({ key, label, unit }) => (
               <div key={key}>
                 <label
                   className="ab-label"
@@ -83,19 +79,25 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
                   {label}
                 </label>
                 <div className="ab-range-row">
-                  <input
-                    className="ab-range-input"
-                    type="number"
-                    value={local[key].min}
-                    onChange={(e) => setMin(key, e.target.value)}
-                  />
+                  <div className="ab-range-input-wrap">
+                    <input
+                      className="ab-range-input"
+                      type="number"
+                      value={local[key].min}
+                      onChange={(e) => setMin(key, e.target.value)}
+                    />
+                    <span className="ab-range-unit">{unit}</span>
+                  </div>
                   <span className="ab-range-sep">—</span>
-                  <input
-                    className="ab-range-input"
-                    type="number"
-                    value={local[key].max}
-                    onChange={(e) => setMax(key, e.target.value)}
-                  />
+                  <div className="ab-range-input-wrap">
+                    <input
+                      className="ab-range-input"
+                      type="number"
+                      value={local[key].max}
+                      onChange={(e) => setMax(key, e.target.value)}
+                    />
+                    <span className="ab-range-unit">{unit}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -105,7 +107,11 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
             <button type="button" className="ab-btn-cancel" onClick={onClose}>
               cancel
             </button>
-            <button type="submit" className="ab-btn" style={{ minWidth: 112 }}>
+            <button
+              type="submit"
+              className="ab-btn ready"
+              style={{ minWidth: 112 }}
+            >
               Save
             </button>
           </div>

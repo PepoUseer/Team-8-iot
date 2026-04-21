@@ -21,13 +21,15 @@ export function GaugeCard({ label, value, unit, color, max, current }) {
   const [tex, tey] = arc(endAngle);
 
   return (
-    <div className="ab-gauge-card">
-      <span className="ab-gauge-label">{label}</span>
+    <div className="ab-gauge-card" style={{ userSelect: "none" }}>
+      <span className="ab-gauge-label" style={{ userSelect: "none" }}>
+        {label}
+      </span>
       <svg
         width="128"
         height="90"
         viewBox="0 0 128 90"
-        style={{ overflow: "visible" }}
+        style={{ overflow: "visible", userSelect: "none" }}
       >
         {/* Track */}
         <path
@@ -55,6 +57,7 @@ export function GaugeCard({ label, value, unit, color, max, current }) {
           fontSize="20"
           fontWeight="700"
           fontFamily="var(--font-body)"
+          style={{ userSelect: "none", pointerEvents: "none" }}
         >
           {value}
         </text>
@@ -65,6 +68,7 @@ export function GaugeCard({ label, value, unit, color, max, current }) {
           fill="var(--ab-placeholder)"
           fontSize="11"
           fontFamily="var(--font-body)"
+          style={{ userSelect: "none", pointerEvents: "none" }}
         >
           {unit}
         </text>

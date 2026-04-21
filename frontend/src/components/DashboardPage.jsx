@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, User } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GaugeCard } from "@/components/GaugeCard";
 import { GraphsPage } from "@/components/GraphsPage";
@@ -37,9 +37,6 @@ export function DashboardPage({ device, user, onBack }) {
 
   const [graphRange, setGraphRange] = useState("week"); // "day" | "week" | "month"
 
-  // rangeHistory holds the data shown in graphs.
-  // Right now it is mock data spread across the selected time window.
-  // When real historical data arrives, replace this with the API response.
   const [rangeHistory, setRangeHistory] = useState([]);
 
   const [reading, setReading] = useState(generateMockReading(null));
@@ -54,7 +51,6 @@ export function DashboardPage({ device, user, onBack }) {
   const intervalRef = useRef(null);
 
   // ── Live polling (current values tab only) ─────────────
-  // Replaces the mock setInterval with a real fetch when the backend is ready.
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setReading((prev) => generateMockReading(prev));
@@ -63,25 +59,6 @@ export function DashboardPage({ device, user, onBack }) {
   }, [device]);
 
   // ── Range-based history fetch ───────────────────────────
-  // Fires whenever the selected range or device changes.
-  // NOW:   generates 40 mock points spread evenly across the selected window
-  //        so the buttons produce visibly different graphs right away.
-  // LATER: swap the body of this effect for a real API call, e.g.:
-  //
-  //   /* FUTURE API FETCH – uncomment and fill in when backend is ready:
-  //
-  //   setRangeHistory([]);          // clear while loading
-  //   const from = new Date(Date.now() - RANGE_MS[graphRange]).toISOString();
-  //   const to   = new Date().toISOString();
-  //
-  //   const res  = await fetch(
-  //     `${import.meta.env.VITE_API_URL}/devices/${device.id}/readings` +
-  //     `?from=${from}&to=${to}`
-  //   );
-  //   const data = await res.json();   // expected: array of { timestamp, co2, temperature, humidity, pressure }
-  //   setRangeHistory(data);
-  //
-  //   */
   useEffect(() => {
     const MOCK_POINTS = 40;
     const windowMs = RANGE_MS[graphRange];
@@ -108,68 +85,22 @@ export function DashboardPage({ device, user, onBack }) {
     return "#22c55e";
   };
 
-  // Get initials from email for avatar
-  const getInitials = (email) => {
-    if (!email) return null;
-    const local = email.split("@")[0];
-    return local.slice(0, 2).toUpperCase();
-  };
-
-  const initials = user ? getInitials(user.email) : null;
-
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {/* Nav tabs row */}
-      <div className="ab-nav-tabs" style={{ justifyContent: "space-between" }}>
-        <div style={{ display: "flex" }}>
-          <button
-            className={`ab-nav-tab ${tab === "current" ? "active" : ""}`}
-            onClick={() => navigate("/dashboard")}
-          >
-            current values
-          </button>
-          <button
-            className={`ab-nav-tab ${tab === "graph" ? "active" : ""}`}
-            onClick={() => navigate("/graphs")}
-          >
-            values in graph
-          </button>
-        </div>
-
-        {/* User avatar with initials or icon */}
-        <div
-          title={user?.email}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            border: "2px solid rgba(255,255,255,0.25)",
-            background: "var(--ab-card)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--ab-text-dim)",
-            fontSize: "13px",
-            fontWeight: 700,
-            fontFamily: "var(--font-body)",
-            userSelect: "none",
-            flexShrink: 0,
-          }}
+      {/* Nav tabs row — no user avatar here, it lives only in the Header */}
+      <div className="ab-nav-tabs">
+        <button
+          className={`ab-nav-tab ${tab === "current" ? "active" : ""}`}
+          onClick={() => navigate("/dashboard")}
         >
-          {initials ? (
-            <span
-              style={{
-                color: "var(--ab-text)",
-                fontSize: "12px",
-                fontWeight: 700,
-              }}
-            >
-              {initials}
-            </span>
-          ) : (
-            <User size={18} />
-          )}
-        </div>
+          current values
+        </button>
+        <button
+          className={`ab-nav-tab ${tab === "graph" ? "active" : ""}`}
+          onClick={() => navigate("/graphs")}
+        >
+          values in graph
+        </button>
       </div>
 
       {/* Device title row */}
@@ -325,7 +256,6 @@ export function DashboardPage({ device, user, onBack }) {
             ))}
           </div>
 
-          {/* Pass rangeHistory (filtered by time window) instead of the raw buffer */}
           <GraphsPage history={rangeHistory} graphRange={graphRange} />
         </div>
       )}
