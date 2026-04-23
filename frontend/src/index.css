@@ -659,3 +659,41 @@ a,
 [style*="cursor: pointer"] {
   cursor: pointer !important;
 }
+
+/* Range row — flex s min-width 0 aby nepřetékal */
+.ab-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Wrapper – roztáhne se flex:1 a drží input + suffix */
+.ab-range-input-unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Input roztažený na celou šířku wrapperu */
+.ab-range-input-unit .ab-range-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 38px;
+  box-sizing: border-box;
+}
+
+/* Jednotka jako suffix uvnitř políčka (vpravo) */
+.ab-range-unit-inside {
+  position: absolute;
+  right: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  pointer-events: none;
+  user-select: none !important;
+  white-space: nowrap;
+}

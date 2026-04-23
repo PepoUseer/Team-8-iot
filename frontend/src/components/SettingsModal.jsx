@@ -19,7 +19,14 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
       className="ab-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="ab-modal" style={{ width: 620, maxWidth: "95vw" }}>
+      <div
+        className="ab-modal"
+        style={{
+          width: 480,
+          maxWidth: "calc(100vw - 40px)",
+          boxSizing: "border-box",
+        }}
+      >
         <button className="ab-modal-close" onClick={onClose}>
           ✕
         </button>
@@ -45,31 +52,16 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "18px 32px",
+              gap: "18px 16px",
               marginBottom: 28,
+              minWidth: 0,
             }}
           >
             {[
-              {
-                key: "co2",
-                label: "CO2 concentration",
-                unit: "ppm",
-              },
-              {
-                key: "humidity",
-                label: "Humidity",
-                unit: "%",
-              },
-              {
-                key: "temperature",
-                label: "Temperature",
-                unit: "°C",
-              },
-              {
-                key: "pressure",
-                label: "Barometric pressure",
-                unit: "hPa",
-              },
+              { key: "co2", label: "CO2 concentration", unit: "ppm" },
+              { key: "humidity", label: "Humidity", unit: "%" },
+              { key: "temperature", label: "Temperature", unit: "°C" },
+              { key: "pressure", label: "Barometric pressure", unit: "hPa" },
             ].map(({ key, label, unit }) => (
               <div key={key}>
                 <label
@@ -79,24 +71,28 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
                   {label}
                 </label>
                 <div className="ab-range-row">
-                  <div className="ab-range-input-wrap">
+                  {/* Min input */}
+                  <div className="ab-range-input-unit">
                     <input
                       className="ab-range-input"
                       type="number"
                       value={local[key].min}
                       onChange={(e) => setMin(key, e.target.value)}
                     />
-                    <span className="ab-range-unit">{unit}</span>
+                    <span className="ab-range-unit-inside">{unit}</span>
                   </div>
+
                   <span className="ab-range-sep">—</span>
-                  <div className="ab-range-input-wrap">
+
+                  {/* Max input */}
+                  <div className="ab-range-input-unit">
                     <input
                       className="ab-range-input"
                       type="number"
                       value={local[key].max}
                       onChange={(e) => setMax(key, e.target.value)}
                     />
-                    <span className="ab-range-unit">{unit}</span>
+                    <span className="ab-range-unit-inside">{unit}</span>
                   </div>
                 </div>
               </div>
