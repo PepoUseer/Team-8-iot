@@ -66,8 +66,6 @@ class ReadingsController extends ControllerBase {
                 })
             }
 
-            //TO DO: Implement token authentication for devices sending readings
-
             const createdReadings = await this.service.create(req.body.id, req.body.readings);
             return res.status(201).json(createdReadings);
         } catch (error) {
