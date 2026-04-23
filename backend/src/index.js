@@ -29,7 +29,8 @@ app.get("/health", (_req, res) => {
 });
 
 const server = app.listen(port, "0.0.0.0", () => {
-    console.log(`Backend server running on http://localhost:${port}`);
+    const addr = server.address();
+    console.log(`Backend server running on ${addr.address}:${addr.port}`);
 });
 
 app.use(function (err, req, res, next) {
