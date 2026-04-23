@@ -23,7 +23,11 @@ class ControllerBase {
         };
         if (!this.ajv.validate(schema, data)) {
             result.success = false;
-            result.errorDetails = this.ajv.errors;
+            result.errorDetails = {
+                message: "Validation error",
+                details: this.ajv.errors,
+                status: 400
+            }
             return result;
         }
         return result;

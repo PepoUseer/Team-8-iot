@@ -1,5 +1,4 @@
 import db from "../db.js";
-import sensorService from "./sensorService.js";
 import sensorDefaults from "../config/sensorDefaults.json" with { type: "json" };
 
 class DeviceService {
