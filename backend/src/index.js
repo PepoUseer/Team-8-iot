@@ -28,7 +28,7 @@ app.get("/health", (_req, res) => {
     });
 });
 
-app.listen(port, () => {
+const server = app.listen(port, "0.0.0.0", () => {
     console.log(`Backend server running on http://localhost:${port}`);
 });
 
