@@ -16,6 +16,7 @@ class ReadingsController extends ControllerBase {
             type: "object",
             properties: {
                 id: { type: "string" },
+                timestamp: { type: "string" },
                 readings: {
                     type: "array",
                     items: {
@@ -66,7 +67,15 @@ class ReadingsController extends ControllerBase {
                 })
             }
 
-            const createdReadings = await this.service.create(req.body.id, req.body.readings);
+            //No timestamp defined, default to current server time
+            if (!req.body.timestamp) req.body.timestamp = new Date();
+
+            req.body.timestamp = new Date(req.body.timestamp);
+            if (!this.validateDate(req.body.timestamp)) {
+                return next(this.invalidTimestampError());
+            }
+
+            const createdReadings = await this.service.create(req.body.id, req.body.readings, req.body.timestamp);
             return res.status(201).json(createdReadings);
         } catch (error) {
             return next(error);
