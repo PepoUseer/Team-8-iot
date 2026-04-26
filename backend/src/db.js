@@ -11,7 +11,6 @@ class Database {
 
     async verifyConnection() {
         try {
-            console.log(`Attempting connection to db through string: ${process.env.DATABASE_URL}`);
             const client = await this.pool.connect();
             client.release();
         } catch (err) {

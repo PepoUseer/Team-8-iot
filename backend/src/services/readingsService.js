@@ -5,8 +5,9 @@ class ReadingsService {
      * Create new readings for a device
      * @param {string} deviceId - UUID of the device
      * @param {[{sensorType: string, value: number}]} readings - Array of readings
+     * @param {Date} timestamp - Time when reading was created
      */
-    async create(deviceId, readings) {
+    async create(deviceId, readings, timestamp = new Date()) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
@@ -31,7 +32,6 @@ class ReadingsService {
 
             // Insert all readings
             const createdReadings = [];
-            const now = new Date();
 
             for (const reading of readings) {
                 const sensorId = sensorMap[reading.sensorType];
@@ -44,7 +44,7 @@ class ReadingsService {
                     VALUES ($1, $2, $3)
                     RETURNING time, sensor_id, value
                 `;
-                const readingResult = await client.query(readingQueryText, [now, sensorId, reading.value]);
+                const readingResult = await client.query(readingQueryText, [timestamp, sensorId, reading.value]);
                 createdReadings.push(readingResult.rows[0]);
             }
 
