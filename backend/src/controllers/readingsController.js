@@ -35,24 +35,7 @@ class ReadingsController extends ControllerBase {
             additionalProperties: false
         };
 
-        function unauthorizedError() {
-            return {
-                message: "Unauthorized",
-                details: "Device not authenticated",
-                status: 401
-            }
-        }
-
         try {
-            if (!req.headers['authorization']) {
-                return next(unauthorizedError());
-            }
-
-            const token = req.headers['authorization'].split(" ")[1];
-            if (token !== process.env.DEVICE_TOKEN) {
-                return next(unauthorizedError());
-            }
-
             const validationResult = this.validate(schema, req.body);
             if (!validationResult.success) {
                 return next(validationResult.errorDetails);

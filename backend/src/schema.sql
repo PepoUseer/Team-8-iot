@@ -14,7 +14,13 @@ CREATE TABLE IF NOT EXISTS devices (
     last_update TIMESTAMPTZ
 );
 
--- 3. User-Devices Junction Table
+-- 3. Device Aliases
+CREATE TABLE IF NOT EXISTS device_aliases (
+    device_alias TEXT PRIMARY KEY,
+    device_id UUID REFERENCES devices(device_id) ON DELETE CASCADE
+);
+
+-- 4. User-Devices Junction Table
 CREATE TABLE IF NOT EXISTS user_devices (
     user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
     device_id UUID REFERENCES devices(device_id) ON DELETE CASCADE,
@@ -22,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user_devices (
     PRIMARY KEY (user_id, device_id)
 );
 
--- 4. Sensors Table
+-- 5. Sensors Table
 CREATE TABLE IF NOT EXISTS sensors (
     sensor_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id UUID NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
@@ -32,7 +38,7 @@ CREATE TABLE IF NOT EXISTS sensors (
     threshold_max DOUBLE PRECISION NOT NULL
 );
 
--- 5. Air Quality Readings
+-- 6. Air Quality Readings
 CREATE TABLE IF NOT EXISTS air_quality_readings (
     time TIMESTAMPTZ NOT NULL,
     sensor_id UUID NOT NULL REFERENCES sensors(sensor_id) ON DELETE CASCADE,
