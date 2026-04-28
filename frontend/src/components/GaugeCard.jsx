@@ -1,35 +1,37 @@
 /* ── Gauge card with SVG arc ─────────────────────────── */
 export function GaugeCard({ label, value, unit, color, max, current }) {
   const pct = Math.min(current / max, 1);
-  // Arc params
+
   const r = 52,
     cx = 64,
-    cy = 64;
+    cy = 68;
   const startAngle = -210,
-    endAngle = 30; // degrees
+    endAngle = 30;
   const toRad = (d) => (d * Math.PI) / 180;
   const arc = (a) => [cx + r * Math.cos(toRad(a)), cy + r * Math.sin(toRad(a))];
-  const totalAngle = endAngle - startAngle; // 240
+  const totalAngle = endAngle - startAngle;
   const currentAngle = startAngle + totalAngle * pct;
 
   const [sx, sy] = arc(startAngle);
   const [ex, ey] = arc(currentAngle);
   const largeArc = totalAngle * pct > 180 ? 1 : 0;
 
-  // Track arc (grey)
   const [tsx, tsy] = arc(startAngle);
   const [tex, tey] = arc(endAngle);
 
   return (
     <div className="ab-gauge-card" style={{ userSelect: "none" }}>
+      {/* Label on top */}
       <span className="ab-gauge-label" style={{ userSelect: "none" }}>
         {label}
       </span>
+
+      {/* SVG arc only — no text inside */}
       <svg
         width="128"
-        height="90"
-        viewBox="0 0 128 90"
-        style={{ overflow: "visible", userSelect: "none" }}
+        height="80"
+        viewBox="0 0 128 80"
+        style={{ overflow: "visible", userSelect: "none", display: "block" }}
       >
         {/* Track */}
         <path
@@ -49,30 +51,12 @@ export function GaugeCard({ label, value, unit, color, max, current }) {
             strokeLinecap="round"
           />
         )}
-        <text
-          x={cx}
-          y={cy + 6}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize="20"
-          fontWeight="700"
-          fontFamily="var(--font-body)"
-          style={{ userSelect: "none", pointerEvents: "none" }}
-        >
-          {value}
-        </text>
-        <text
-          x={cx}
-          y={cy + 22}
-          textAnchor="middle"
-          fill="var(--ab-placeholder)"
-          fontSize="11"
-          fontFamily="var(--font-body)"
-          style={{ userSelect: "none", pointerEvents: "none" }}
-        >
-          {unit}
-        </text>
       </svg>
+
+      {/* Value + unit inline below the arc */}
+      <div className="ab-gauge-value" style={{ userSelect: "none" }}>
+        {value} <span className="ab-gauge-unit">{unit}</span>
+      </div>
     </div>
   );
 }

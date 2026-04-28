@@ -79,20 +79,34 @@ body {
   min-height: 100vh;
 }
 
-/* ── Header ───────────────────────────────────────────── */
+/* ── Header — pouze avatar, logo je v nav-tabs ────────── */
 .ab-header {
   background: var(--ab-header);
-  height: 88px;
+  height: 56px;
   display: flex;
   align-items: center;
   padding: 0 30px;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* Logo v nav-tabs řádku */
 .ab-logo {
+  font-family: var(--font-logo);
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--ab-text);
+  letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  margin-right: 12px;
+}
+
+/* Logo na sign-in stránce (standalone header) */
+.ab-logo-standalone {
   font-family: var(--font-logo);
   font-size: 40px;
   line-height: 1.2;
@@ -184,7 +198,6 @@ body {
   color: var(--ab-text);
   margin-bottom: 4px;
   display: block;
-
   cursor: default;
   user-select: none;
   -webkit-user-select: none;
@@ -379,6 +392,7 @@ body {
   overflow: hidden;
 }
 
+/* ── Nav tabs — logo + taby na jednom řádku ───────────── */
 .ab-nav-tabs {
   display: flex;
   background: var(--ab-header);
@@ -410,12 +424,15 @@ body {
 .ab-gauge-card {
   background: var(--ab-tab-active);
   border-radius: 10px;
-  padding: 16px 12px 12px;
+  padding: 16px 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 150px;
+  gap: 4px;
+  width: 200px;
+  min-width: 200px;
+  height: 200px;
+  justify-content: center;
 }
 
 .ab-gauge-label {
@@ -427,20 +444,24 @@ body {
   text-align: center;
 }
 
+/* Hodnota — číslo s jednotkou vedle sebe */
 .ab-gauge-value {
   font-family: var(--font-body);
   font-size: 26px;
   font-weight: 700;
   color: var(--ab-text);
   text-align: center;
+  margin-top: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
-.ab-gauge-value sup {
-  font-size: 13px;
+/* Jednotka — menší, vedle čísla */
+.ab-gauge-unit {
+  font-size: 14px;
   font-weight: 600;
   color: var(--ab-placeholder);
-  vertical-align: super;
-  margin-left: 2px;
 }
 
 /* ── Modal overlay ────────────────────────────────────── */
@@ -543,7 +564,8 @@ body {
 .ab-range-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .ab-range-input {
@@ -604,14 +626,13 @@ body {
   margin: 0 auto;
 }
 
-/* Wrapper kolem inputu a jednotky */
+/* ── Range input s jednotkou uvnitř ──────────────────── */
 .ab-range-input-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* Jednotka vedle inputu (ppm, °C, %, hPa) */
 .ab-range-unit {
   font-family: var(--font-body);
   font-size: 14px;
@@ -621,7 +642,7 @@ body {
   min-width: 28px;
 }
 
-/* ── Aby neklikal kurzor po kliknutí kdekoliv na obrazovce ── */
+/* ── Kurzory ──────────────────────────────────────────── */
 .ab-gauge-card,
 .ab-gauge-label,
 .ab-gauge-value,
@@ -635,14 +656,12 @@ body {
   -webkit-user-select: none;
 }
 
-/* ── Globální fix textového kurzoru ── */
 * {
   cursor: default !important;
   user-select: none !important;
   -webkit-user-select: none !important;
 }
 
-/* Výjimky */
 input,
 textarea {
   cursor: text !important;
@@ -660,15 +679,7 @@ a,
   cursor: pointer !important;
 }
 
-/* Range row — flex s min-width 0 aby nepřetékal */
-.ab-range-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-/* Wrapper – roztáhne se flex:1 a drží input + suffix */
+/* ── Range input unit wrapper ─────────────────────────── */
 .ab-range-input-unit {
   position: relative;
   display: flex;
@@ -677,7 +688,6 @@ a,
   min-width: 0;
 }
 
-/* Input roztažený na celou šířku wrapperu */
 .ab-range-input-unit .ab-range-input {
   width: 100%;
   min-width: 0;
@@ -685,7 +695,6 @@ a,
   box-sizing: border-box;
 }
 
-/* Jednotka jako suffix uvnitř políčka (vpravo) */
 .ab-range-unit-inside {
   position: absolute;
   right: 10px;

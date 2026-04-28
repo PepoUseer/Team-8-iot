@@ -18,9 +18,8 @@ function generateMockReading(prev) {
   };
 }
 
-const POLL_MS = 5000; // refresh every 5 s (swap for real API)
+const POLL_MS = 5000;
 
-// ── Range → milliseconds map ────────────────────────────
 const RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
@@ -31,14 +30,11 @@ export function DashboardPage({ device, user, onBack }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Derive active tab from the current route
   const isGraphs = location.pathname === "/graphs";
   const tab = isGraphs ? "graph" : "current";
 
-  const [graphRange, setGraphRange] = useState("week"); // "day" | "week" | "month"
-
+  const [graphRange, setGraphRange] = useState("week");
   const [rangeHistory, setRangeHistory] = useState([]);
-
   const [reading, setReading] = useState(generateMockReading(null));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [limits, setLimits] = useState({
@@ -50,7 +46,6 @@ export function DashboardPage({ device, user, onBack }) {
 
   const intervalRef = useRef(null);
 
-  // ── Live polling (current values tab only) ─────────────
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setReading((prev) => generateMockReading(prev));
@@ -58,7 +53,6 @@ export function DashboardPage({ device, user, onBack }) {
     return () => clearInterval(intervalRef.current);
   }, [device]);
 
-  // ── Range-based history fetch ───────────────────────────
   useEffect(() => {
     const MOCK_POINTS = 40;
     const windowMs = RANGE_MS[graphRange];
@@ -77,7 +71,6 @@ export function DashboardPage({ device, user, onBack }) {
     minute: "2-digit",
   });
 
-  // Colour status: green if within limits, orange if near edge, red if over
   const statusColor = (val, { min, max }) => {
     if (val < min || val > max) return "#ef4444";
     const margin = (max - min) * 0.1;
@@ -87,8 +80,10 @@ export function DashboardPage({ device, user, onBack }) {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {/* Nav tabs row — no user avatar here, it lives only in the Header */}
+      {/* ── Nav tabs row — Logo + tabs together on one bar ── */}
       <div className="ab-nav-tabs">
+        <span className="ab-logo ab-logo-inline">Air Buddy</span>
+
         <button
           className={`ab-nav-tab ${tab === "current" ? "active" : ""}`}
           onClick={() => navigate("/dashboard")}

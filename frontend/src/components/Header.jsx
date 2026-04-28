@@ -1,21 +1,14 @@
 import { User } from "lucide-react";
 import { useState } from "react";
 
-export function Header({ user, onLogoClick, onLogout }) {
+export function Header({ user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="ab-header">
-      <span
-        className="ab-logo"
-        style={{ cursor: "pointer" }}
-        onClick={onLogoClick}
-      >
-        Air Buddy
-      </span>
-
+      {/* Header now only contains the user avatar — logo moved to nav-tabs row */}
       {user && (
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", marginLeft: "auto" }}>
           <button
             className="ab-user-avatar"
             onClick={() => setMenuOpen((o) => !o)}
