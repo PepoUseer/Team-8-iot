@@ -218,7 +218,7 @@ class DeviceController extends ControllerBase {
     }
 
     /**
-     * Create or get device by alias
+     * Link user to device
      * @param {import("express").Request} req - Express request
      * @param {import("express").Response} res - Express response
      * @param {import("express").NextFunction} next - Next function
@@ -250,7 +250,7 @@ class DeviceController extends ControllerBase {
                 })
             }
 
-            const isLinked = this.service.isUserLinked(userId, aliasData.device_id);
+            const isLinked = await this.service.isUserLinked(userId, aliasData.device_id);
             if (isLinked !== null) {
                 return next({
                     message: "Device already added",
@@ -259,7 +259,7 @@ class DeviceController extends ControllerBase {
                 });
             }
 
-            const newLink = this.service.linkUser(userId, aliasData.device_id);
+            const newLink = await this.service.linkUser(userId, aliasData.device_id);
 
             return res.status(200).json(newLink);
         } catch (error) {
@@ -268,7 +268,25 @@ class DeviceController extends ControllerBase {
     }
 
     /**
-     * Create or get device by alias
+     * Get all devices of the logged user
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async getForUser(req, res, next) {
+        try {
+            const userId = req.session.userId;
+
+            const devices = await this.service.getForUser(userId);
+            
+            return res.status(200).json({devices});
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * Get latest readings of given device
      * @param {import("express").Request} req - Express request
      * @param {import("express").Response} res - Express response
      * @param {import("express").NextFunction} next - Next function

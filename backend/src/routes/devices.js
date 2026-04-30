@@ -6,7 +6,7 @@ const router = express.Router();
 import DeviceController from "../controllers/deviceController.js";
 const dc = new DeviceController();
 
-router.get("/");
+router.get("/", verifyAuth, dc.getForUser.bind(dc));
 router.get("/:id", verifyAuth, dc.get.bind(dc));
 router.post("/", verifyAuth, dc.create.bind(dc));
 router.post("/alias", validateApiKey, dc.createOrGet.bind(dc));
