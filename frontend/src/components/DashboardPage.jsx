@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GaugeCard } from "@/components/GaugeCard";
 import { GraphsPage } from "@/components/GraphsPage";
@@ -26,7 +26,7 @@ const RANGE_MS = {
   month: 30 * 24 * 60 * 60 * 1000,
 };
 
-export function DashboardPage({ device, user, onBack }) {
+export function DashboardPage({ device, user, onBack, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,6 +37,7 @@ export function DashboardPage({ device, user, onBack }) {
   const [rangeHistory, setRangeHistory] = useState([]);
   const [reading, setReading] = useState(generateMockReading(null));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [limits, setLimits] = useState({
     co2: { min: 350, max: 1000 },
     temperature: { min: 20, max: 26 },
@@ -80,7 +81,7 @@ export function DashboardPage({ device, user, onBack }) {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {/* ── Nav tabs row — Logo + tabs together on one bar ── */}
+      {/* ── Jediný řádek: Logo + taby + avatar ── */}
       <div className="ab-nav-tabs">
         <span className="ab-logo ab-logo-inline">Air Buddy</span>
 
@@ -96,6 +97,67 @@ export function DashboardPage({ device, user, onBack }) {
         >
           values in graph
         </button>
+
+        {/* Avatar přesunut sem — marginLeft: auto ho tlačí doprava */}
+        {user && (
+          <div style={{ position: "relative", marginLeft: "auto" }}>
+            <button
+              className="ab-user-avatar"
+              onClick={() => setMenuOpen((o) => !o)}
+              title={user.email}
+            >
+              <User size={22} />
+            </button>
+
+            {menuOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "52px",
+                  background: "#434446",
+                  borderRadius: "10px",
+                  minWidth: "180px",
+                  padding: "8px 0",
+                  zIndex: 50,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "8px 16px 10px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "13px",
+                    color: "var(--ab-placeholder)",
+                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  {user.email}
+                </div>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onLogout && onLogout();
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 16px",
+                    background: "none",
+                    border: "none",
+                    color: "var(--ab-text)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Device title row */}
@@ -121,7 +183,7 @@ export function DashboardPage({ device, user, onBack }) {
           <p
             style={{
               fontFamily: "var(--font-body)",
-              fontSize: "12px",
+              fontSize: "15px",
               color: "var(--ab-placeholder)",
             }}
           >
@@ -146,12 +208,15 @@ export function DashboardPage({ device, user, onBack }) {
               background: "var(--ab-cancel)",
               border: "none",
               borderRadius: 8,
-              padding: "6px 14px",
+              height: 36,
+              padding: "0 14px",
               fontFamily: "var(--font-body)",
               fontSize: "14px",
               fontWeight: 600,
               color: "#3C3D3E",
               cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
             }}
           >
             change device
@@ -177,10 +242,11 @@ export function DashboardPage({ device, user, onBack }) {
       {tab === "current" && (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: 16,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 28,
             padding: "20px 24px 24px",
+            justifyContent: "center",
           }}
         >
           <GaugeCard

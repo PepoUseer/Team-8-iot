@@ -80,16 +80,9 @@ body {
 }
 
 /* ── Header — pouze avatar, logo je v nav-tabs ────────── */
+/* Header je nyní skrytý — avatar je přesunut do nav-tabs řádku */
 .ab-header {
-  background: var(--ab-header);
-  height: 56px;
-  display: flex;
-  align-items: center;
-  padding: 0 30px;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  user-select: none;
-  -webkit-user-select: none;
+  display: none;
 }
 
 /* Logo v nav-tabs řádku */
@@ -392,13 +385,18 @@ body {
   overflow: hidden;
 }
 
-/* ── Nav tabs — logo + taby na jednom řádku ───────────── */
+/* ── Nav tabs — logo + taby + avatar na jednom řádku ───── */
 .ab-nav-tabs {
   display: flex;
   background: var(--ab-header);
   padding: 0 20px;
   gap: 4px;
   align-items: center;
+}
+
+/* Avatar přesunutý do nav-tabs (marginLeft: auto ho odsune doprava) */
+.ab-nav-tabs .ab-user-avatar {
+  margin-left: auto;
 }
 
 .ab-nav-tab {
@@ -420,24 +418,40 @@ body {
   border-bottom-color: var(--ab-accent);
 }
 
+/* ── Gauge wrapper (label + card) ─────────────────────── */
+.ab-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ab-gauge-label-above {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
 /* ── Gauge ────────────────────────────────────────────── */
 .ab-gauge-card {
   background: var(--ab-tab-active);
   border-radius: 10px;
-  padding: 16px 12px 16px;
+  padding: 20px 16px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 200px;
-  min-width: 200px;
-  height: 200px;
+  gap: 6px;
+  width: 220px;
+  min-width: 220px;
+  height: 220px;
   justify-content: center;
 }
 
 .ab-gauge-label {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ab-text-dim);
   letter-spacing: 0.05em;
@@ -447,7 +461,7 @@ body {
 /* Hodnota — číslo s jednotkou vedle sebe */
 .ab-gauge-value {
   font-family: var(--font-body);
-  font-size: 26px;
+  font-size: 38px;
   font-weight: 700;
   color: var(--ab-text);
   text-align: center;
@@ -459,7 +473,7 @@ body {
 
 /* Jednotka — menší, vedle čísla */
 .ab-gauge-unit {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--ab-placeholder);
 }
@@ -576,7 +590,7 @@ body {
   border-radius: var(--ab-radius-input);
   padding: 0 10px;
   font-family: var(--font-body);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ab-placeholder);
   text-align: center;
@@ -691,7 +705,7 @@ a,
 .ab-range-input-unit .ab-range-input {
   width: 100%;
   min-width: 0;
-  padding-right: 38px;
+  padding-right: 34px;
   box-sizing: border-box;
 }
 
@@ -699,7 +713,7 @@ a,
   position: absolute;
   right: 10px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ab-placeholder);
   pointer-events: none;

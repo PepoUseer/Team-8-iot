@@ -37,10 +37,13 @@ function AppRoutes() {
     device: selectedDevice,
     user,
     onBack: () => navigate("/devices"),
+    onLogout: handleLogout,
   };
 
   return (
     <div className="ab-page">
+      {/* Header je nyní viditelný jen na stránkách bez nav-tabs (sign-in, devices).
+          Na dashboardu je avatar integrován přímo v nav-tabs řádku. */}
       <Header
         user={user}
         onLogoClick={() => user && navigate("/devices")}
