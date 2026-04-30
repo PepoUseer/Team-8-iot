@@ -1,6 +1,9 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import session from "express-session";
+import pgSession from "connect-pg-simple";
+import db from "./db.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
@@ -13,10 +16,35 @@ app.use(
 );
 app.use(express.json());
 
+const pool = db.pool;
+const SessionStore = pgSession(session);
+const store = new SessionStore({
+    pool,
+    tableName: "session",
+    createTableIfMissing: true,
+});
+
+app.use(
+    session({
+        store,
+        secret: process.env.SESSION_SECRET || "iotteam8",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: "lax",
+        },
+    })
+);
+
+import authRouter from "./routes/auth.js";
 import devicesRouter from "./routes/devices.js";
 import sensorRouter from "./routes/sensors.js";
 import readingsRouter from "./routes/readings.js";
 
+app.use("/auth", authRouter);
 app.use("/devices", devicesRouter);
 app.use("/sensors", sensorRouter);
 app.use("/readings", readingsRouter);
