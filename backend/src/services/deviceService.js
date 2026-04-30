@@ -30,6 +30,33 @@ class DeviceService {
     }
 
     /**
+     * Gets the latest readings from all sensors on this device
+     * @param {string} deviceId 
+     */
+    async latestReadings(deviceId) {
+        const queryText = `
+            SELECT 
+                s.sensor_id,
+                s.sensor_type as type,
+                s.unit,
+                ar.time,
+                ar.value
+            FROM sensors s
+            LEFT JOIN LATERAL (
+                SELECT time, value
+                FROM air_quality_readings
+                WHERE sensor_id = s.sensor_id
+                ORDER BY time DESC
+                LIMIT 1
+            ) ar ON TRUE
+            WHERE s.device_id = $1
+            ORDER BY s.sensor_id
+        `;
+        const result = await db.query(queryText, [deviceId]);
+        return result.rows;
+    }
+
+    /**
      * Create a new device with associated sensors
      * @param {[{sensorType: string, unit: string}]} sensors 
      */
