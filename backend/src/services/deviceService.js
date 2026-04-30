@@ -254,6 +254,21 @@ class DeviceService {
         const result = await db.query(queryText, [userId, deviceId]);
         return result.rows[0] || null;
     }
+
+    /**
+     * Sets the time the last update was received from this device
+     * @param {string} deviceId 
+     * @param {Date} timestamp 
+     */
+    async setLastUpdate(deviceId, timestamp) {
+        const queryText = `UPDATE devices
+            SET last_update = COALESCE($2, last_update)
+            WHERE device_id = $1
+            RETURNING device_id, device_name, last_update
+        `;
+        const result = await db.query(queryText, [deviceId, timestamp]);
+        return result.rows[0] || null;
+    }
 }
 
 const deviceService = new DeviceService();

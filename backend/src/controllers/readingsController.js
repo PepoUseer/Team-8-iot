@@ -59,6 +59,8 @@ class ReadingsController extends ControllerBase {
             }
 
             const createdReadings = await this.service.create(req.body.id, req.body.readings, req.body.timestamp);
+
+            deviceService.setLastUpdate(req.body.id, req.body.timestamp);
             return res.status(201).json(createdReadings);
         } catch (error) {
             return next(error);
