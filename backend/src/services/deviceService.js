@@ -208,6 +208,52 @@ class DeviceService {
             client.release();
         }
     }
+
+    /**
+     * Link a user to a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     */
+    async linkUser(userId, deviceId) {
+        const queryText = `
+            INSERT INTO user_devices (user_id, device_id)
+            VALUES ($1, $2)
+            RETURNING user_id, device_id, added_at
+        `;
+        const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Get all devices for a user
+     * @param {string} userId 
+     */
+    async getForUser(userId) {
+        const queryText = `
+            SELECT d.device_id, d.device_name, d.last_update
+            FROM devices d
+            JOIN user_devices ud ON d.device_id = ud.device_id
+            WHERE ud.user_id = $1
+        `;
+        const result = await db.query(queryText, [userId]);
+        return result.rows;
+    }
+
+    /**
+     * Check if a user is linked to a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     * @returns {Promise<{user_id: string, device_id: string, added_at: TIMESTAMPTZ}|null>}
+     */
+    async isUserLinked(userId, deviceId) {
+        const queryText = `
+            SELECT user_id, device_id, added_at
+            FROM user_devices
+            WHERE user_id = $1 AND device_id = $2
+        `;
+        const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0] || null;
+    }
 }
 
 const deviceService = new DeviceService();
