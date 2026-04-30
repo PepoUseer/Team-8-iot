@@ -202,7 +202,7 @@ class DeviceController extends ControllerBase {
             if (!alias) {
                 return next({
                     message: "Invalid device alias",
-                    details: `Device alias "${req.body.deviceAlias}" does not exist in the database`,
+                    details: `Device alias ${req.body.deviceAlias} does not exist in the database`,
                     status: 400,
                 })
             }
@@ -212,6 +212,93 @@ class DeviceController extends ControllerBase {
                 return res.status(201).json(result.device);
             }
             return res.status(200).json(result.device);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * Create or get device by alias
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async userAdd(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" },
+            },
+            required: ["id"],
+            additionalProperties: false
+        };
+        try {
+            const validationResult = this.validate(schema, req.body);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const userId = req.session.userId;
+            const deviceAlias = req.body.id;
+
+            const aliasData = await this.service.getAliasByName(deviceAlias);
+             if (!aliasData) {
+                return next({
+                    message: "Invalid device",
+                    details: `Device ${req.body.deviceAlias} does not exist in the database`,
+                    status: 400,
+                })
+            }
+
+            const isLinked = this.service.isUserLinked(userId, aliasData.device_id);
+            if (isLinked !== null) {
+                return next({
+                    message: "Device already added",
+                    details: `User has already added device ${deviceAlias}`,
+                    status: 400
+                });
+            }
+
+            const newLink = this.service.linkUser(userId, aliasData.device_id);
+
+            return res.status(200).json(newLink);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    /**
+     * Create or get device by alias
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async latestReadings(req, res, next) {
+         const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" },
+            },
+            required: ["id"],
+            additionalProperties: false
+        };
+        try {
+            const validationResult = this.validate(schema, req.params);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
+
+            const device = await this.service.get(req.params.id);
+
+            if (!device) {
+                return next(this.notFoundError());
+            }
+
+            const readings = await this.service.latestReadings(req.params.id);
+            return res.status(200).json({
+                ...device,
+                readings
+            });
         } catch (error) {
             return next(error);
         }
