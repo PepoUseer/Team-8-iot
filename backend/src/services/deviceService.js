@@ -36,7 +36,7 @@ class DeviceService {
     async create(sensors) {
         const client = await db.pool.connect();
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             const defaultName = "New Device";
             const queryText = `
@@ -71,10 +71,10 @@ class DeviceService {
                 }
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
             return device;
         } catch (error) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw error;
         } finally {
             client.release();
@@ -130,7 +130,7 @@ class DeviceService {
     async createOrGet(deviceAlias, sensors) {
         const client = await db.pool.connect();
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             // If alias already has a device_id, return the existing device
             const aliasQuery = `
@@ -146,7 +146,7 @@ class DeviceService {
                     WHERE device_id = $1
                 `;
                 const existingDeviceResult = await client.query(existingDeviceQuery, [aliasRow.device_id]);
-                await client.query('COMMIT');
+                await client.query("COMMIT");
                 return {
                     created: false,
                     device: existingDeviceResult.rows[0]
@@ -196,13 +196,13 @@ class DeviceService {
                 }
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
             return {
                 created: true,
                 device: device
             };
         } catch (error) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw error;
         } finally {
             client.release();
