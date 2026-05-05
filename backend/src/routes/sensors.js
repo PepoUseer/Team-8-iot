@@ -7,7 +7,7 @@ const sc = new SensorController();
 
 router.post("/", verifyAuth, sc.create.bind(sc));
 router.get("/:id", verifyAuth, sc.get.bind(sc));
-router.get("/:id/readings", sc.getReadings.bind(sc));
+router.get("/:id/readings", verifyAuth, sc.getReadings.bind(sc));
 router.patch("/:id", verifyAuth, sc.update.bind(sc));
 router.delete("/:id", verifyAuth, sc.delete.bind(sc));
 
