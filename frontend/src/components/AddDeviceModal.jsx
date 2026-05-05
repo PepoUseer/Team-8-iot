@@ -3,13 +3,23 @@ import { useState } from "react";
 export function AddDeviceModal({ onAdd, onClose }) {
   const [name, setName] = useState("");
   const [deviceId, setDeviceId] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const canAdd = name.trim() !== "" && deviceId.trim() !== "";
+  const canAdd = name.trim() !== "" && deviceId.trim() !== "" && !loading;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canAdd) return;
-    onAdd({ name: name.trim(), deviceId: deviceId.trim() });
+    setError("");
+    setLoading(true);
+    try {
+      await onAdd({ name: name.trim(), deviceId: deviceId.trim() });
+    } catch (err) {
+      setError(err.message || "Failed to add device.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -21,7 +31,6 @@ export function AddDeviceModal({ onAdd, onClose }) {
         <button className="ab-modal-close" onClick={onClose}>
           ✕
         </button>
-
         <h2 className="ab-modal-title">Add new device</h2>
 
         <form onSubmit={handleSubmit}>
@@ -43,9 +52,25 @@ export function AddDeviceModal({ onAdd, onClose }) {
               type="text"
               placeholder="device hardware ID"
               value={deviceId}
-              onChange={(e) => setDeviceId(e.target.value)}
+              onChange={(e) => {
+                setDeviceId(e.target.value);
+                if (error) setError("");
+              }}
             />
           </div>
+
+          {error && (
+            <p
+              style={{
+                color: "#ef4444",
+                fontSize: "13px",
+                marginBottom: 12,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {error}
+            </p>
+          )}
 
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <button type="button" className="ab-btn-cancel" onClick={onClose}>
@@ -55,8 +80,9 @@ export function AddDeviceModal({ onAdd, onClose }) {
               type="submit"
               className={`ab-btn${canAdd ? " ready" : ""}`}
               style={{ minWidth: 112 }}
+              disabled={!canAdd}
             >
-              Add
+              {loading ? "Adding…" : "Add"}
             </button>
           </div>
         </form>

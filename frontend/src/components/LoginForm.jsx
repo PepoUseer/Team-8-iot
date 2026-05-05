@@ -1,17 +1,19 @@
 import { useState } from "react";
+import { api } from "@/api";
 
-// Simple RFC-5322-lite email check (sdílené s RegisterForm)
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * LoginForm
  * Props:
- *   onLogin(email) – zavolá se po úspěšné validaci
+ *   onLogin(user) – called after successful login with user object { email, username }
  */
 export function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const isReady = email.trim() !== "" && password.trim() !== "" && !emailError;
 
@@ -23,14 +25,27 @@ export function LoginForm({ onLogin }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!EMAIL_RE.test(email)) {
       setEmailError("Please enter a valid email address.");
       return;
     }
     if (!isReady) return;
-    onLogin(email);
+
+    setLoading(true);
+    setServerError("");
+    try {
+      const data = await api.login(email, password);
+      onLogin({
+        email: data.user?.email ?? email,
+        username: data.user?.username,
+      });
+    } catch (err) {
+      setServerError(err.message || "Login failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,6 +62,7 @@ export function LoginForm({ onLogin }) {
           onChange={(e) => {
             setEmail(e.target.value);
             if (emailError) setEmailError("");
+            if (serverError) setServerError("");
           }}
           onBlur={handleEmailBlur}
           autoComplete="email"
@@ -66,20 +82,28 @@ export function LoginForm({ onLogin }) {
           type="password"
           placeholder="••••••••••"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (serverError) setServerError("");
+          }}
           autoComplete="current-password"
         />
       </div>
+
+      {serverError && (
+        <p style={{ ...errorStyle, marginBottom: 8 }}>{serverError}</p>
+      )}
 
       <div
         style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}
       >
         <button
           type="submit"
-          className={`ab-btn${isReady ? " ready" : ""}`}
+          className={`ab-btn${isReady && !loading ? " ready" : ""}`}
           style={{ minWidth: 112 }}
+          disabled={loading}
         >
-          Login
+          {loading ? "…" : "Login"}
         </button>
       </div>
     </form>

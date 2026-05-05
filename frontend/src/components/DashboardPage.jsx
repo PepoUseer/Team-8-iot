@@ -4,8 +4,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { GaugeCard } from "@/components/GaugeCard";
 import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
+import { api } from "@/api";
 
-// ── Mock data generator ─────────────────────────────────
+// ── Fallback mock generator (used only when no real sensor ids available) ──
 function generateMockReading(prev) {
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const drift = (val, range) => val + (Math.random() - 0.5) * range;
@@ -18,13 +19,23 @@ function generateMockReading(prev) {
   };
 }
 
-const POLL_MS = 5000;
+const POLL_MS = 10000;
 
 const RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
   month: 30 * 24 * 60 * 60 * 1000,
 };
+
+// Normalize sensor type string → our internal key
+function sensorKey(type) {
+  const t = (type || "").toLowerCase();
+  if (t === "co2") return "co2";
+  if (t === "temperature" || t === "temp") return "temperature";
+  if (t === "humidity") return "humidity";
+  if (t === "pressure") return "pressure";
+  return null;
+}
 
 export function DashboardPage({ device, user, onBack, onLogout }) {
   const navigate = useNavigate();
@@ -35,7 +46,8 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
 
   const [graphRange, setGraphRange] = useState("week");
   const [rangeHistory, setRangeHistory] = useState([]);
-  const [reading, setReading] = useState(generateMockReading(null));
+  const [reading, setReading] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [limits, setLimits] = useState({
@@ -45,15 +57,42 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
     pressure: { min: 1013, max: 1020 },
   });
 
-  const intervalRef = useRef(null);
+  // Sensor id map: { co2: uuid, temperature: uuid, ... }
+  const sensorIds = useRef({});
+
+  // ── Fetch latest readings from backend ─────────────────
+  async function fetchLatest() {
+    try {
+      const data = await api.getDeviceLatest(device.id);
+      // data = { device_id, last_update, readings: [{ type, value, unit }] }
+      const r = { timestamp: Date.now() };
+      for (const s of data.readings || []) {
+        const k = sensorKey(s.type);
+        if (k) r[k] = parseFloat(s.value);
+      }
+      setReading((prev) => ({ ...(prev ?? {}), ...r }));
+      if (data.last_update) {
+        setLastUpdated(
+          new Date(data.last_update).toLocaleTimeString("cs-CZ", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        );
+      }
+    } catch {
+      // If API fails, keep previous / mock values
+      setReading((prev) => prev ?? generateMockReading(null));
+    }
+  }
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setReading((prev) => generateMockReading(prev));
-    }, POLL_MS);
-    return () => clearInterval(intervalRef.current);
+    setReading(null);
+    fetchLatest();
+    const id = setInterval(fetchLatest, POLL_MS);
+    return () => clearInterval(id);
   }, [device]);
 
+  // ── Graph history (mock until sensor readings endpoint wired per-chart) ──
   useEffect(() => {
     const MOCK_POINTS = 40;
     const windowMs = RANGE_MS[graphRange];
@@ -67,21 +106,20 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
     setRangeHistory(pts);
   }, [graphRange, device]);
 
-  const lastUpdated = new Date(reading.timestamp).toLocaleTimeString("cs-CZ", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   const statusColor = (val, { min, max }) => {
+    if (val == null) return "rgba(255,255,255,0.2)";
     if (val < min || val > max) return "#ef4444";
     const margin = (max - min) * 0.1;
     if (val < min + margin || val > max - margin) return "#f97316";
     return "#22c55e";
   };
 
+  // Current reading with safe fallbacks
+  const r = reading ?? {};
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      {/* ── Jediný řádek: Logo + taby + avatar ── */}
+      {/* ── Nav tabs row ── */}
       <div className="ab-nav-tabs">
         <span className="ab-logo ab-logo-inline">Air Buddy</span>
 
@@ -98,7 +136,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           values in graph
         </button>
 
-        {/* Avatar přesunut sem — marginLeft: auto ho tlačí doprava */}
         {user && (
           <div style={{ position: "relative", marginLeft: "auto" }}>
             <button
@@ -201,6 +238,7 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           </p>
         </div>
 
+        {/* Buttons — both same height (36px) */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             onClick={onBack}
@@ -221,19 +259,24 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           >
             change device
           </button>
+          {/* Settings button — same height as "change device" */}
           <button
             onClick={() => setSettingsOpen(true)}
             style={{
-              background: "none",
+              background: "var(--ab-cancel)",
               border: "none",
-              color: "var(--ab-text-dim)",
+              borderRadius: 8,
+              height: 36,
+              width: 36,
               cursor: "pointer",
-              padding: 4,
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
+              color: "#3C3D3E",
+              flexShrink: 0,
             }}
           >
-            <Settings size={22} />
+            <Settings size={18} />
           </button>
         </div>
       </div>
@@ -251,35 +294,35 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
         >
           <GaugeCard
             label="CO2 concentration"
-            value={reading.co2.toFixed(0)}
+            value={r.co2 != null ? r.co2.toFixed(0) : "—"}
             unit="ppm"
-            color={statusColor(reading.co2, limits.co2)}
+            color={statusColor(r.co2, limits.co2)}
             max={2000}
-            current={reading.co2}
+            current={r.co2 ?? 0}
           />
           <GaugeCard
             label="Temperature"
-            value={reading.temperature.toFixed(1)}
+            value={r.temperature != null ? r.temperature.toFixed(1) : "—"}
             unit="°C"
-            color={statusColor(reading.temperature, limits.temperature)}
+            color={statusColor(r.temperature, limits.temperature)}
             max={50}
-            current={reading.temperature}
+            current={r.temperature ?? 0}
           />
           <GaugeCard
             label="Humidity"
-            value={reading.humidity.toFixed(1)}
+            value={r.humidity != null ? r.humidity.toFixed(1) : "—"}
             unit="%"
-            color={statusColor(reading.humidity, limits.humidity)}
+            color={statusColor(r.humidity, limits.humidity)}
             max={100}
-            current={reading.humidity}
+            current={r.humidity ?? 0}
           />
           <GaugeCard
             label="Barometric pressure"
-            value={reading.pressure.toFixed(0)}
+            value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
-            color={statusColor(reading.pressure, limits.pressure)}
+            color={statusColor(r.pressure, limits.pressure)}
             max={1100}
-            current={reading.pressure}
+            current={r.pressure ?? 0}
           />
         </div>
       )}
@@ -295,24 +338,26 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
               gap: 8,
             }}
           >
-            {["day", "week", "month"].map((r) => (
+            {["day", "week", "month"].map((range) => (
               <button
-                key={r}
-                onClick={() => setGraphRange(r)}
+                key={range}
+                onClick={() => setGraphRange(range)}
                 style={{
                   background:
-                    graphRange === r ? "var(--ab-accent)" : "var(--ab-cancel)",
+                    graphRange === range
+                      ? "var(--ab-accent)"
+                      : "var(--ab-cancel)",
                   border: "none",
                   borderRadius: 6,
                   padding: "4px 14px",
                   fontFamily: "var(--font-body)",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: graphRange === r ? "#000" : "var(--ab-text-dim)",
+                  color: graphRange === range ? "#000" : "var(--ab-text-dim)",
                   cursor: "pointer",
                 }}
               >
-                {r}
+                {range}
               </button>
             ))}
           </div>

@@ -1,24 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { AddDeviceModal } from "@/components/AddDeviceModal";
-
-// Mock devices – replace with real API call when backend is ready
-const MOCK_DEVICES = [
-  { id: "dev-1", name: "Office Room", status: "online" },
-  { id: "dev-2", name: "Server Room", status: "offline" },
-];
+import { api } from "@/api";
 
 export function DevicesPage({ onSelectDevice }) {
-  const [devices, setDevices] = useState(MOCK_DEVICES);
+  const [devices, setDevices] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleAdd = ({ name, deviceId }) => {
-    const newDevice = {
-      id: deviceId || `dev-${Date.now()}`,
-      name,
-      status: "offline",
-    };
-    setDevices((prev) => [...prev, newDevice]);
+  // Fetch user's devices on mount
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  async function fetchDevices() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await api.getDevices();
+      // API returns { devices: [{ device_id, name }] }
+      setDevices(
+        (data.devices || []).map((d) => ({
+          id: d.device_id,
+          name: d.name,
+          status: "online",
+        })),
+      );
+    } catch (err) {
+      setError(err.message || "Failed to load devices.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleAdd = async ({ deviceId }) => {
+    const data = await api.addDevice(deviceId); // throw nechá projít do modalu
+    await fetchDevices();
     setShowAddModal(false);
   };
 
@@ -36,6 +54,30 @@ export function DevicesPage({ onSelectDevice }) {
       >
         Your devices
       </h2>
+
+      {loading && (
+        <p
+          style={{
+            color: "var(--ab-placeholder)",
+            fontFamily: "var(--font-body)",
+            paddingLeft: 4,
+          }}
+        >
+          Loading…
+        </p>
+      )}
+
+      {error && (
+        <p
+          style={{
+            color: "#ef4444",
+            fontFamily: "var(--font-body)",
+            paddingLeft: 4,
+          }}
+        >
+          {error}
+        </p>
+      )}
 
       <div className="ab-devices-grid">
         {devices.map((device) => (

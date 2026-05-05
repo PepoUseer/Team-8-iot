@@ -16,8 +16,9 @@ function AppRoutes() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = (email) => {
-    setUser({ email });
+  // onLogin now receives a user object { email, username } from the forms
+  const handleLogin = (userObj) => {
+    setUser(userObj);
     navigate("/devices");
   };
 
@@ -32,7 +33,6 @@ function AppRoutes() {
     navigate("/auth");
   };
 
-  // Shared dashboard props
   const dashboardProps = {
     device: selectedDevice,
     user,
@@ -42,8 +42,6 @@ function AppRoutes() {
 
   return (
     <div className="ab-page">
-      {/* Header je nyní viditelný jen na stránkách bez nav-tabs (sign-in, devices).
-          Na dashboardu je avatar integrován přímo v nav-tabs řádku. */}
       <Header
         user={user}
         onLogoClick={() => user && navigate("/devices")}
@@ -51,13 +49,10 @@ function AppRoutes() {
       />
 
       <Routes>
-        {/* Default redirect */}
         <Route path="/" element={<Navigate to="/auth" replace />} />
 
-        {/* Single auth route – tab is a query param: /auth?tab=login or /auth?tab=register */}
         <Route path="/auth" element={<SignInPage onLogin={handleLogin} />} />
 
-        {/* Protected routes, redirect to /auth if no user */}
         <Route
           path="/devices"
           element={
@@ -92,7 +87,6 @@ function AppRoutes() {
           }
         />
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
     </div>

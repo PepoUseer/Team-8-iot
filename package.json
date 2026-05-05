@@ -7,5 +7,8 @@
     "dev": "pnpm -r --parallel --filter air-buddy-backend --filter air-buddy-frontend dev",
     "dev:frontend": "pnpm --filter air-buddy-frontend dev",
     "dev:backend": "pnpm --filter air-buddy-backend dev"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
   }
 }
