@@ -66,6 +66,29 @@ class SensorService {
         const result = await db.query(queryText, [id]);
         return result.rows[0] || null;
     }
+
+    /**
+     * Get readings closest to provided dates
+     * @param {string} id - sensor_id
+     * @param {Date[]} dates - array of dates to find closest readings for
+     * @returns {Promise<Array>} readings ordered chronologically, length matches dates array length
+     */
+    async readingsByDates(id, dates) {
+        const queryText = `
+            SELECT r.time, r.value
+            FROM (SELECT UNNEST($2::TIMESTAMPTZ[]) AS date) AS dates
+            CROSS JOIN LATERAL (
+                SELECT time, sensor_id, value
+                FROM air_quality_readings
+                WHERE sensor_id = $1
+                ORDER BY ABS(EXTRACT(EPOCH FROM (time - dates.date)))
+                LIMIT 1
+            ) r
+            ORDER BY r.time
+        `;
+        const result = await db.query(queryText, [id, dates]);
+        return result.rows;
+    }
 }
 
 const sensorService = new SensorService();
