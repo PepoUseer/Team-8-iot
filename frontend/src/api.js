@@ -1,5 +1,5 @@
 // ── API base URL ──────────────────────────────────────────
-const BASE = const BASE = import.meta.env.API_URL || "http://localhost:4000";
+const BASE = import.meta.env.API_URL || "http://localhost:4000";
 
 async function request(method, path, body) {
   const opts = {
