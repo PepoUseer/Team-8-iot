@@ -10,7 +10,7 @@ class ReadingsService {
     async create(deviceId, readings, timestamp = new Date()) {
         const client = await db.pool.connect();
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             // Get all sensors for the device
             const sensorsQueryText = `
@@ -48,10 +48,10 @@ class ReadingsService {
                 createdReadings.push(readingResult.rows[0]);
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
             return createdReadings;
         } catch (error) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw error;
         } finally {
             client.release();

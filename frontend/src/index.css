@@ -1,15 +1,722 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ── Brand tokens ─────────────────────────────────────── */
 :root {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #111827;
-  background-color: #f3f4f6;
+  /* Backgrounds */
+  --ab-bg: #3c3d3e;
+  --ab-header: #38393b;
+  --ab-card: #5b5b5b;
+  --ab-tab-active: #434446;
+  --ab-tab-inactive: #5b5b5b;
+
+  /* Inputs */
+  --ab-input: #8f9293;
+  --ab-placeholder: #c4c4c4;
+
+  /* Accent (CTA buttons) */
+  --ab-accent: #9e7055;
+  --ab-accent-hover: #b8845f;
+
+  /* Cancel button */
+  --ab-cancel: #7b7b7b;
+
+  /* Status */
+  --ab-online: #22c55e;
+  --ab-offline: #ef4444;
+
+  /* Text */
+  --ab-text: #ffffff;
+  --ab-text-dim: rgba(255, 255, 255, 0.5);
+
+  /* Misc */
+  --ab-border-radius: 14px;
+  --ab-radius-btn: 10px;
+  --ab-radius-input: 5px;
+  --ab-radius-tab: 15px;
+
+  /* Fonts */
+  --font-logo: "Protest Riot", cursive;
+  --font-heading: "Sitara", Georgia, serif;
+  --font-body: "Smooch Sans", sans-serif;
 }
 
-* {
+/* ── Reset / Base ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
+  background: var(--ab-bg);
+  color: var(--ab-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  cursor: default;
+}
+
+/* ── Typography helpers ───────────────────────────────── */
+.font-logo {
+  font-family: var(--font-logo);
+}
+.font-heading {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.font-body {
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+/* ── Layout ───────────────────────────────────────────── */
+.ab-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header — pouze avatar, logo je v nav-tabs ────────── */
+/* Header je nyní skrytý — avatar je přesunut do nav-tabs řádku */
+.ab-header {
+  display: none;
+}
+
+/* Logo v nav-tabs řádku */
+.ab-logo {
+  font-family: var(--font-logo);
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--ab-text);
+  letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  margin-right: 12px;
+}
+
+/* Logo na sign-in stránce (standalone header) */
+.ab-logo-standalone {
+  font-family: var(--font-logo);
+  font-size: 40px;
+  line-height: 1.2;
+  color: var(--ab-text);
+  letter-spacing: 0.01em;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.ab-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: var(--ab-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  color: var(--ab-text-dim);
+}
+.ab-user-avatar:hover {
+  border-color: var(--ab-text);
+  color: var(--ab-text);
+}
+
+/* ── Tabs (Login / Register) ──────────────────────────── */
+.ab-tabs {
+  display: flex;
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ab-tab {
+  padding: 10px 28px;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.6;
+
+  border-radius: var(--ab-radius-tab) var(--ab-radius-tab) 0 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--ab-text);
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+  opacity: 0.5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ab-tab.active {
+  background: var(--ab-card);
+  opacity: 1;
+}
+.ab-tab.inactive {
+  background: var(--ab-tab-inactive);
+}
+
+/* ── Auth card ────────────────────────────────────────── */
+.ab-auth-card {
+  background: var(--ab-card);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 0 0 var(--ab-border-radius) var(--ab-border-radius);
+  padding: 28px 38px 36px;
+  width: 400px;
+  max-width: 100%;
+}
+
+.ab-auth-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  gap: 0;
+}
+
+/* ── Form inputs ──────────────────────────────────────── */
+.ab-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--ab-text);
+  margin-bottom: 4px;
+  display: block;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ab-label span {
+  color: var(--ab-accent);
+  margin-left: 2px;
+}
+
+.ab-input {
+  cursor: text;
+  width: 100%;
+  height: 43px;
+  background: var(--ab-input);
+  border: none;
+  border-radius: var(--ab-radius-input);
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ab-text);
+  outline: none;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.ab-input::placeholder {
+  color: var(--ab-placeholder);
+}
+.ab-input:focus {
+  background: #9fa3a4;
+  box-shadow: 0 0 0 2px rgba(158, 112, 85, 0.45);
+}
+
+.ab-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 18px;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── CTA Button ───────────────────────────────────────── */
+.ab-btn {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--ab-accent);
+  border-radius: var(--ab-radius-btn);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  color: #000;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ab-btn:hover {
+  background: var(--ab-accent-hover);
+}
+.ab-btn:active {
+  transform: translateY(1px);
+}
+
+/* Green state when form is filled */
+.ab-btn.ready {
+  background: #22c55e;
+  color: #fff;
+}
+.ab-btn.ready:hover {
+  background: #16a34a;
+}
+
+/* ── Cancel button ────────────────────────────────────── */
+.ab-btn-cancel {
+  height: 48px;
+  padding: 0 20px;
+  background: var(--ab-cancel);
+  border-radius: var(--ab-radius-btn);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  color: #3c3d3e;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ab-btn-cancel:hover {
+  background: #8e8e8e;
+}
+
+/* ── Device cards ─────────────────────────────────────── */
+.ab-devices-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+}
+
+.ab-device-card {
+  width: 120px;
+  height: 120px;
+  background: var(--ab-card);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+  padding: 12px;
+  text-align: center;
+}
+.ab-device-card:hover {
+  transform: translateY(-2px);
+}
+.ab-device-card.online {
+  border-color: var(--ab-online);
+}
+.ab-device-card.offline {
+  border-color: var(--ab-offline);
+}
+
+.ab-device-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-text);
+  line-height: 1.3;
+}
+
+.ab-device-status {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ab-device-status.online {
+  color: var(--ab-online);
+}
+.ab-device-status.offline {
+  color: var(--ab-offline);
+}
+
+.ab-add-device-card {
+  width: 120px;
+  height: 120px;
+  background: var(--ab-card);
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+  color: rgba(255, 255, 255, 0.4);
+}
+.ab-add-device-card:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+/* ── Main content area ────────────────────────────────── */
+.ab-main {
+  flex: 1;
+  background: var(--ab-card);
+  border-radius: var(--ab-border-radius);
+  margin: 24px;
+  overflow: hidden;
+}
+
+/* ── Nav tabs — logo + taby + avatar na jednom řádku ───── */
+.ab-nav-tabs {
+  display: flex;
+  background: var(--ab-header);
+  padding: 0 20px;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Avatar přesunutý do nav-tabs (marginLeft: auto ho odsune doprava) */
+.ab-nav-tabs .ab-user-avatar {
+  margin-left: auto;
+}
+
+.ab-nav-tab {
+  padding: 14px 24px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.ab-nav-tab.active {
+  color: var(--ab-text);
+  border-bottom-color: var(--ab-accent);
+}
+
+/* ── Gauge wrapper (label + card) ─────────────────────── */
+.ab-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ab-gauge-label-above {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+/* ── Gauge ────────────────────────────────────────────── */
+.ab-gauge-card {
+  background: var(--ab-tab-active);
+  border-radius: 10px;
+  padding: 20px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 220px;
+  min-width: 220px;
+  height: 220px;
+  justify-content: center;
+}
+
+.ab-gauge-label {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+/* Hodnota — číslo s jednotkou vedle sebe */
+.ab-gauge-value {
+  font-family: var(--font-body);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--ab-text);
+  text-align: center;
+  margin-top: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+/* Jednotka — menší, vedle čísla */
+.ab-gauge-unit {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+}
+
+/* ── Modal overlay ────────────────────────────────────── */
+.ab-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ab-modal {
+  background: var(--ab-card);
+  border-radius: var(--ab-border-radius);
+  padding: 28px 32px 32px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+  position: relative;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ab-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--ab-text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.ab-modal-close:hover {
+  color: var(--ab-text);
+}
+
+.ab-modal-title {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ab-text);
+  margin-bottom: 20px;
+}
+
+.ab-modal-subtitle {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ab-text);
+  margin: 18px 0 10px;
+}
+
+/* ── Graph area ───────────────────────────────────────── */
+.ab-graph-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.ab-graph-card {
+  background: var(--ab-tab-active);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.ab-graph-title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ab-text);
+  margin-bottom: 10px;
+}
+
+/* ── Settings range row ───────────────────────────────── */
+.ab-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ab-range-input {
+  width: 108px;
+  height: 39px;
+  background: var(--ab-input);
+  border: none;
+  border-radius: var(--ab-radius-input);
+  padding: 0 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  text-align: center;
+  outline: none;
+}
+.ab-range-input:focus {
+  background: #9fa3a4;
+  color: var(--ab-text);
+}
+
+.ab-range-sep {
+  font-family: var(--font-body);
+  font-size: 28px;
+  color: var(--ab-placeholder);
+  line-height: 1;
+}
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ab-input);
+  border-radius: 3px;
+}
+
+/* ── 1280px resolution ────────────────────────────────── */
+html,
+body {
+  min-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+body {
+  width: 100%;
+}
+
+.ab-page {
+  width: 1280px;
+  min-width: 1280px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── Range input s jednotkou uvnitř ──────────────────── */
+.ab-range-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ab-range-unit {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  white-space: nowrap;
+  min-width: 28px;
+}
+
+/* ── Kurzory ──────────────────────────────────────────── */
+.ab-gauge-card,
+.ab-gauge-label,
+.ab-gauge-value,
+.ab-device-card,
+.ab-device-name,
+.ab-device-status,
+.ab-nav-tab,
+.ab-btn,
+.ab-btn-cancel {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+* {
+  cursor: default !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+input,
+textarea {
+  cursor: text !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+button,
+a,
+.ab-device-card,
+.ab-add-device-card,
+[role="button"],
+[onClick],
+[style*="cursor: pointer"] {
+  cursor: pointer !important;
+}
+
+/* ── Range input unit wrapper ─────────────────────────── */
+.ab-range-input-unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.ab-range-input-unit .ab-range-input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 34px;
+  box-sizing: border-box;
+}
+
+.ab-range-unit-inside {
+  position: absolute;
+  right: 10px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ab-placeholder);
+  pointer-events: none;
+  user-select: none !important;
+  white-space: nowrap;
 }

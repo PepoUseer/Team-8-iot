@@ -30,13 +30,40 @@ class DeviceService {
     }
 
     /**
+     * Gets the latest readings from all sensors on this device
+     * @param {string} deviceId 
+     */
+    async latestReadings(deviceId) {
+        const queryText = `
+            SELECT 
+                s.sensor_id,
+                s.sensor_type as type,
+                s.unit,
+                ar.time,
+                ar.value
+            FROM sensors s
+            LEFT JOIN LATERAL (
+                SELECT time, value
+                FROM air_quality_readings
+                WHERE sensor_id = s.sensor_id
+                ORDER BY time DESC
+                LIMIT 1
+            ) ar ON TRUE
+            WHERE s.device_id = $1
+            ORDER BY s.sensor_id
+        `;
+        const result = await db.query(queryText, [deviceId]);
+        return result.rows;
+    }
+
+    /**
      * Create a new device with associated sensors
      * @param {[{sensorType: string, unit: string}]} sensors 
      */
     async create(sensors) {
         const client = await db.pool.connect();
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             const defaultName = "New Device";
             const queryText = `
@@ -71,10 +98,10 @@ class DeviceService {
                 }
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
             return device;
         } catch (error) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw error;
         } finally {
             client.release();
@@ -130,7 +157,7 @@ class DeviceService {
     async createOrGet(deviceAlias, sensors) {
         const client = await db.pool.connect();
         try {
-            await client.query('BEGIN');
+            await client.query("BEGIN");
 
             // If alias already has a device_id, return the existing device
             const aliasQuery = `
@@ -146,7 +173,7 @@ class DeviceService {
                     WHERE device_id = $1
                 `;
                 const existingDeviceResult = await client.query(existingDeviceQuery, [aliasRow.device_id]);
-                await client.query('COMMIT');
+                await client.query("COMMIT");
                 return {
                     created: false,
                     device: existingDeviceResult.rows[0]
@@ -196,17 +223,78 @@ class DeviceService {
                 }
             }
 
-            await client.query('COMMIT');
+            await client.query("COMMIT");
             return {
                 created: true,
                 device: device
             };
         } catch (error) {
-            await client.query('ROLLBACK');
+            await client.query("ROLLBACK");
             throw error;
         } finally {
             client.release();
         }
+    }
+
+    /**
+     * Link a user to a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     */
+    async linkUser(userId, deviceId) {
+        const queryText = `
+            INSERT INTO user_devices (user_id, device_id)
+            VALUES ($1, $2)
+            RETURNING user_id, device_id, added_at
+        `;
+        const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Get all devices for a user
+     * @param {string} userId 
+     */
+    async getForUser(userId) {
+        const queryText = `
+            SELECT d.device_id, d.device_name, d.last_update
+            FROM devices d
+            JOIN user_devices ud ON d.device_id = ud.device_id
+            WHERE ud.user_id = $1
+        `;
+        const result = await db.query(queryText, [userId]);
+        return result.rows;
+    }
+
+    /**
+     * Check if a user is linked to a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     * @returns {Promise<{user_id: string, device_id: string, added_at: TIMESTAMPTZ}|null>}
+     */
+    async isUserLinked(userId, deviceId) {
+        const queryText = `
+            SELECT user_id, device_id, added_at
+            FROM user_devices
+            WHERE user_id = $1 AND device_id = $2
+        `;
+        const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Sets the time the last update was received from this device
+     * @param {string} deviceId 
+     * @param {Date} timestamp 
+     */
+    async setLastUpdate(deviceId, timestamp) {
+        const queryText = `UPDATE devices
+            SET last_update = COALESCE($2, last_update)
+            WHERE device_id = $1
+            RETURNING device_id, device_name, last_update
+        `;
+        const result = await db.query(queryText, [deviceId, timestamp]);
+        return result.rows[0] || null;
     }
 }
 
