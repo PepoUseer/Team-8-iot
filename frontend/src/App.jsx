@@ -1,42 +1,103 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+import { Header } from "@/components/Header";
+import { SignInPage } from "@/components/SignInPage";
+import { DevicesPage } from "@/components/DevicesPage";
+import { DashboardPage } from "@/components/DashboardPage";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
+function AppRoutes() {
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-function App() {
-  const [health, setHealth] = useState('Loading...');
+  // onLogin now receives a user object { email, username } from the forms
+  const handleLogin = (userObj) => {
+    setUser(userObj);
+    navigate("/devices");
+  };
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const handleSelectDevice = (device) => {
+    setSelectedDevice(device);
+    navigate("/dashboard");
+  };
 
-    async function loadHealth() {
-      try {
-        const response = await fetch(`${apiUrl}/health`, {
-          signal: controller.signal
-        });
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
+  const handleLogout = () => {
+    setUser(null);
+    setSelectedDevice(null);
+    navigate("/auth");
+  };
 
-        const data = await response.json();
-        setHealth(`API status: ${data.status}`);
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          setHealth('API is unreachable');
-        }
-      }
-    }
-
-    loadHealth();
-    return () => controller.abort();
-  }, []);
+  const dashboardProps = {
+    device: selectedDevice,
+    user,
+    onBack: () => navigate("/devices"),
+    onLogout: handleLogout,
+  };
 
   return (
-    <main className="app">
-      <h1>Air Buddy</h1>
-      <p>Každý člověk se lépe soustředí když může dýchat čistý vzduch.</p>
-      <p>{health}</p>
-    </main>
+    <div className="ab-page">
+      <Header
+        user={user}
+        onLogoClick={() => user && navigate("/devices")}
+        onLogout={handleLogout}
+      />
+
+      <Routes>
+        <Route path="/" element={<Navigate to="/auth" replace />} />
+
+        <Route path="/auth" element={<SignInPage onLogin={handleLogin} />} />
+
+        <Route
+          path="/devices"
+          element={
+            user ? (
+              <DevicesPage
+                onSelectDevice={handleSelectDevice}
+                onBack={() => navigate("/devices")}
+              />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            user && selectedDevice ? (
+              <DashboardPage {...dashboardProps} />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
+        />
+        <Route
+          path="/graphs"
+          element={
+            user && selectedDevice ? (
+              <DashboardPage {...dashboardProps} />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 
