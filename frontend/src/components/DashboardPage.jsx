@@ -6,7 +6,7 @@ import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
 
-// ── Fallback mock generator (used only when no real sensor ids available) ──
+// ── Fallback mock generator (použije se jen když API selže a ještě nemáme žádná data) ──
 function generateMockReading(prev) {
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const drift = (val, range) => val + (Math.random() - 0.5) * range;
@@ -27,7 +27,9 @@ const RANGE_MS = {
   month: 30 * 24 * 60 * 60 * 1000,
 };
 
-// Normalize sensor type string → our internal key
+const GRAPH_SAMPLE_COUNT = 50;
+
+// Normalize sensor type string → náš interní klíč
 function sensorKey(type) {
   const t = (type || "").toLowerCase();
   if (t === "co2") return "co2";
@@ -46,6 +48,7 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
 
   const [graphRange, setGraphRange] = useState("week");
   const [rangeHistory, setRangeHistory] = useState([]);
+  const [graphLoading, setGraphLoading] = useState(false);
   const [reading, setReading] = useState(null);
   const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -58,17 +61,22 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
   });
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
+  // Naplní se při prvním fetchLatest ze sensor_id v odpovědi
   const sensorIds = useRef({});
 
   // ── Fetch latest readings from backend ─────────────────
   async function fetchLatest() {
     try {
       const data = await api.getDeviceLatest(device.id);
-      // data = { device_id, last_update, readings: [{ type, value, unit }] }
+      // data = { device_id, device_name, last_update, readings: [{ sensor_id, type, unit, time, value }] }
       const r = { timestamp: Date.now() };
       for (const s of data.readings || []) {
         const k = sensorKey(s.type);
-        if (k) r[k] = parseFloat(s.value);
+        if (k) {
+          r[k] = parseFloat(s.value);
+          // FIX: uložit sensor_id pro pozdější volání graph API
+          sensorIds.current[k] = s.sensor_id;
+        }
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
       if (data.last_update) {
@@ -80,31 +88,98 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
         );
       }
     } catch {
-      // If API fails, keep previous / mock values
+      // Pokud API selže, zachovat předchozí data nebo vygenerovat mock
       setReading((prev) => prev ?? generateMockReading(null));
     }
   }
 
   useEffect(() => {
     setReading(null);
+    sensorIds.current = {};
     fetchLatest();
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
   }, [device]);
 
-  // ── Graph history (mock until sensor readings endpoint wired per-chart) ──
+  // ── Graph history — reálné API, fallback na mock ────────
   useEffect(() => {
-    const MOCK_POINTS = 40;
-    const windowMs = RANGE_MS[graphRange];
-    const step = windowMs / (MOCK_POINTS - 1);
-    const pts = [];
-    let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
-    for (let i = 0; i < MOCK_POINTS; i++) {
-      r = generateMockReading(r);
-      pts.push({ ...r, timestamp: Date.now() - windowMs + i * step });
+    if (tab !== "graph") return;
+
+    async function fetchGraphData() {
+      setGraphLoading(true);
+
+      // Pokud ještě nemáme sensor ids (fetchLatest ještě neskončil), počkáme
+      // a zkusíme to přes krátký timeout; jinak rovnou mock
+      const ids = sensorIds.current;
+      const hasIds = Object.keys(ids).length > 0;
+
+      if (!hasIds) {
+        // Ještě nemáme ids — zobraz mock a po příštím fetchLatest se useEffect znovu spustí
+        setRangeHistory(generateMockHistory(graphRange));
+        setGraphLoading(false);
+        return;
+      }
+
+      const end = new Date().toISOString();
+      const start = new Date(Date.now() - RANGE_MS[graphRange]).toISOString();
+
+      try {
+        // Paralelně fetch pro všechny dostupné sensory
+        const keys = ["co2", "temperature", "humidity", "pressure"];
+        const results = await Promise.all(
+          keys.map((k) =>
+            ids[k]
+              ? api
+                  .getSensorReadings(ids[k], start, end, GRAPH_SAMPLE_COUNT)
+                  .then((res) => ({ key: k, data: res.data || [] }))
+                  .catch(() => ({ key: k, data: [] }))
+              : Promise.resolve({ key: k, data: [] }),
+          ),
+        );
+
+        // Sloučit do pole { timestamp, co2, temperature, humidity, pressure }
+        // Použijeme co2 (nebo první dostupný sensor) jako základ pro timestampy
+        const base = results.find((r) => r.data.length > 0);
+        if (!base) {
+          setRangeHistory(generateMockHistory(graphRange));
+          setGraphLoading(false);
+          return;
+        }
+
+        const merged = base.data.map((point, i) => {
+          const entry = { timestamp: new Date(point.time).getTime() };
+          for (const { key, data } of results) {
+            // Najít nejbližší bod pro stejný index (data jsou stejně dlouhá díky sampleCount)
+            entry[key] = data[i] != null ? parseFloat(data[i].value) : null;
+          }
+          return entry;
+        });
+
+        setRangeHistory(merged);
+      } catch {
+        setRangeHistory(generateMockHistory(graphRange));
+      } finally {
+        setGraphLoading(false);
+      }
     }
-    setRangeHistory(pts);
-  }, [graphRange, device]);
+
+    fetchGraphData();
+  }, [graphRange, device, tab]);
+
+  // Re-fetch graph když se naplní sensorIds (po prvním fetchLatest)
+  const prevSensorIdsRef = useRef({});
+  useEffect(() => {
+    if (tab !== "graph") return;
+    const prev = prevSensorIdsRef.current;
+    const curr = sensorIds.current;
+    const wasEmpty = Object.keys(prev).length === 0;
+    const nowHas = Object.keys(curr).length > 0;
+    if (wasEmpty && nowHas) {
+      prevSensorIdsRef.current = { ...curr };
+      // Trigger graph refetch — změníme graphRange na sebe sama přes dočasný stav
+      setGraphRange((r) => r);
+    }
+  }, [reading, tab]);
 
   const statusColor = (val, { min, max }) => {
     if (val == null) return "rgba(255,255,255,0.2)";
@@ -259,7 +334,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           >
             change device
           </button>
-          {/* Settings button — same height as "change device" */}
           <button
             onClick={() => setSettingsOpen(true)}
             style={{
@@ -362,7 +436,21 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
             ))}
           </div>
 
-          <GraphsPage history={rangeHistory} graphRange={graphRange} />
+          {graphLoading ? (
+            <div
+              style={{
+                padding: "48px 24px",
+                textAlign: "center",
+                fontFamily: "var(--font-body)",
+                fontSize: "14px",
+                color: "var(--ab-text-dim)",
+              }}
+            >
+              Loading…
+            </div>
+          ) : (
+            <GraphsPage history={rangeHistory} graphRange={graphRange} />
+          )}
         </div>
       )}
 
@@ -370,7 +458,8 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
         <SettingsModal
           device={device}
           limits={limits}
-          onSave={(newLimits) => {
+          sensorIds={sensorIds.current}
+          onSave={(newLimits, newName) => {
             setLimits(newLimits);
             setSettingsOpen(false);
           }}
@@ -379,4 +468,26 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
       )}
     </div>
   );
+}
+
+// ── Mock fallback pro grafy (když API není dostupné) ───────
+function generateMockHistory(graphRange) {
+  const MOCK_POINTS = 40;
+  const windowMs = RANGE_MS[graphRange];
+  const step = windowMs / (MOCK_POINTS - 1);
+  const pts = [];
+  let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const drift = (val, range) => val + (Math.random() - 0.5) * range;
+  for (let i = 0; i < MOCK_POINTS; i++) {
+    r = {
+      timestamp: Date.now() - windowMs + i * step,
+      co2: clamp(drift(r.co2, 40), 350, 2000),
+      temperature: clamp(drift(r.temperature, 0.5), 15, 40),
+      humidity: clamp(drift(r.humidity, 2), 20, 90),
+      pressure: clamp(drift(r.pressure, 1), 950, 1080),
+    };
+    pts.push({ ...r });
+  }
+  return pts;
 }

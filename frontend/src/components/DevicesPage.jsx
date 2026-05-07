@@ -3,13 +3,22 @@ import { Plus } from "lucide-react";
 import { AddDeviceModal } from "@/components/AddDeviceModal";
 import { api } from "@/api";
 
+// Zařízení je "online" pokud poslalo data v posledních 5 minutách
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
+
+function deriveStatus(lastUpdate) {
+  if (!lastUpdate) return "offline";
+  return Date.now() - new Date(lastUpdate).getTime() < ONLINE_THRESHOLD_MS
+    ? "online"
+    : "offline";
+}
+
 export function DevicesPage({ onSelectDevice }) {
   const [devices, setDevices] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch user's devices on mount
   useEffect(() => {
     fetchDevices();
   }, []);
@@ -19,12 +28,13 @@ export function DevicesPage({ onSelectDevice }) {
     setError("");
     try {
       const data = await api.getDevices();
-      // API returns { devices: [{ device_id, name }] }
+      // FIX: backend vrací device_name (ne name) a last_update pro status
       setDevices(
         (data.devices || []).map((d) => ({
           id: d.device_id,
-          name: d.name,
-          status: "online",
+          name: d.device_name,
+          lastUpdate: d.last_update,
+          status: deriveStatus(d.last_update),
         })),
       );
     } catch (err) {
@@ -35,7 +45,7 @@ export function DevicesPage({ onSelectDevice }) {
   }
 
   const handleAdd = async ({ deviceId }) => {
-    const data = await api.addDevice(deviceId); // throw nechá projít do modalu
+    await api.addDevice(deviceId);
     await fetchDevices();
     setShowAddModal(false);
   };

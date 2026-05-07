@@ -34,10 +34,24 @@ export const api = {
 
   getDeviceLatest: (deviceId) => request("GET", `devices/${deviceId}/latest`),
 
-  // ── Sensors ────────────────────────────────────────────
+  // FIX: backend čte req.params + req.body (ne req.query), proto POST s body
   getSensorReadings: (sensorId, start, end, sampleCount) =>
-    request(
-      "GET",
-      `sensors/${sensorId}/readings?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&sampleCount=${sampleCount ?? 0}`,
-    ),
+    request("POST", `sensors/${sensorId}/readings`, {
+      start,
+      end,
+      sampleCount: sampleCount ?? 50,
+    }),
+
+  // ── Sensors ────────────────────────────────────────────
+  updateSensor: (sensorId, { thresholdMin, thresholdMax, unit, sensorType }) =>
+    request("PATCH", `sensors/${sensorId}`, {
+      thresholdMin,
+      thresholdMax,
+      ...(unit !== undefined && { unit }),
+      ...(sensorType !== undefined && { sensorType }),
+    }),
+
+  // ── Devices update ─────────────────────────────────────
+  updateDevice: (deviceId, deviceName) =>
+    request("PATCH", `devices/${deviceId}`, { deviceName }),
 };
