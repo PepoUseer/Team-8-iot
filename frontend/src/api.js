@@ -36,7 +36,7 @@ export const api = {
 
   // FIX: backend čte req.params + req.body (ne req.query), proto POST s body
   getSensorReadings: (sensorId, start, end, sampleCount) =>
-    request("POST", `sensors/${sensorId}/readings`, {
+    request("GET", `sensors/${sensorId}/readings`, {
       start,
       end,
       sampleCount: sampleCount ?? 50,
