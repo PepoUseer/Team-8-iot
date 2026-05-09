@@ -9,10 +9,32 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
   const setMax = (key, val) =>
     setLocal((l) => ({ ...l, [key]: { ...l[key], max: Number(val) } }));
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    onSave(local);
-  };
+  const handleSave = async () => {
+  try {
+    await api.updateDevice(device.id, {
+      device_name: deviceName,
+    });
+
+    const updates = Object.entries(sensorMap).map(
+      async ([type, sensorId]) => {
+        const limit = limits[type];
+
+        await api.updateSensor(sensorId, {
+          threshold_min: limit.min,
+          threshold_max: limit.max,
+          unit: limit.unit,
+        });
+      }
+    );
+
+    await Promise.all(updates);
+
+    onClose();
+    onSaved?.();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   return (
     <div

@@ -1,57 +1,65 @@
 // ── API base URL ──────────────────────────────────────────
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-async function request(method, path, body) {
-  const opts = {
+const request = async (method, path, body) => {
+  const options = {
     method,
-    credentials: "include", // send session cookie
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
   };
-  if (body !== undefined) opts.body = JSON.stringify(body);
 
-  const res = await fetch(`${BASE}/${path}`, opts);
-  const data = await res.json().catch(() => ({}));
+  if (body && method !== "GET") {
+    options.body = JSON.stringify(body);
+  }
+
+  const query =
+    method === "GET" && body
+      ? `?${new URLSearchParams(body).toString()}`
+      : "";
+
+  const res = await fetch(`/api/${path}${query}`, options);
 
   if (!res.ok) {
-    const msg = data?.error?.message || data?.message || `Error ${res.status}`;
-    throw new Error(msg);
+    throw new Error(await res.text());
   }
-  return data;
-}
 
-// ── Auth ──────────────────────────────────────────────────
-export const api = {
-  register: (username, email, password) =>
-    request("POST", "auth/register", { username, email, password }),
+  return res.status === 204 ? null : res.json();
+};
 
+const api = {
   login: (email, password) =>
     request("POST", "auth/login", { email, password }),
 
-  // ── Devices ────────────────────────────────────────────
+  register: (email, password) =>
+    request("POST", "auth/register", { email, password }),
+
   getDevices: () => request("GET", "devices"),
 
-  addDevice: (id) => request("POST", "devices/add", { id }),
+  getDevice: (id) => request("GET", `devices/${id}`),
 
-  getDeviceLatest: (deviceId) => request("GET", `devices/${deviceId}/latest`),
+  createDevice: (deviceId) =>
+    request("POST", "devices/add", { id: deviceId }),
 
-  // FIX: backend čte req.params + req.body (ne req.query), proto POST s body
-  getSensorReadings: (sensorId, start, end, sampleCount) =>
+  updateDevice: (id, data) =>
+    request("PATCH", `devices/${id}`, data),
+
+  deleteDevice: (id) =>
+    request("DELETE", `devices/${id}`),
+
+  getDeviceSensors: (deviceId) =>
+    request("GET", `devices/${deviceId}/sensors`),
+
+  updateSensor: (sensorId, data) =>
+    request("PATCH", `sensors/${sensorId}`, data),
+
+  getSensorReadings: (sensorId, start, end, sampleCount = 50) =>
     request("GET", `sensors/${sensorId}/readings`, {
       start,
       end,
-      sampleCount: sampleCount ?? 50,
+      sampleCount,
     }),
-
-  // ── Sensors ────────────────────────────────────────────
-  updateSensor: (sensorId, { thresholdMin, thresholdMax, unit, sensorType }) =>
-    request("PATCH", `sensors/${sensorId}`, {
-      thresholdMin,
-      thresholdMax,
-      ...(unit !== undefined && { unit }),
-      ...(sensorType !== undefined && { sensorType }),
-    }),
-
-  // ── Devices update ─────────────────────────────────────
-  updateDevice: (deviceId, deviceName) =>
-    request("PATCH", `devices/${deviceId}`, { deviceName }),
 };
+
+export default api;

@@ -53,12 +53,9 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
   const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [limits, setLimits] = useState({
-    co2: { min: 350, max: 1000 },
-    temperature: { min: 20, max: 26 },
-    humidity: { min: 40, max: 60 },
-    pressure: { min: 1013, max: 1020 },
-  });
+ //Nahrazení hardcoded limitů
+  const [limits, setLimits] = useState({});
+const [sensorMap, setSensorMap] = useState({});
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   // Naplní se při prvním fetchLatest ze sensor_id v odpovědi
@@ -100,7 +97,36 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
   }, [device]);
+  //Načtení senzorů při změně zařízení
+useEffect(() => {
+  if (!selectedDeviceId) return;
 
+  const loadSensors = async () => {
+    try {
+      const sensors = await api.getDeviceSensors(selectedDeviceId);
+
+      const newLimits = {};
+      const newSensorMap = {};
+
+      sensors.forEach((sensor) => {
+        newLimits[sensor.sensor_type] = {
+          min: sensor.threshold_min,
+          max: sensor.threshold_max,
+          unit: sensor.unit,
+        };
+
+        newSensorMap[sensor.sensor_type] = sensor.sensor_id;
+      });
+
+      setLimits(newLimits);
+      setSensorMap(newSensorMap);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  loadSensors();
+}, [selectedDeviceId]);
   // ── Graph history — reálné API, fallback na mock ────────
   useEffect(() => {
     if (tab !== "graph") return;
