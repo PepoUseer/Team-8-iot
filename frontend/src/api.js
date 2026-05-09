@@ -32,8 +32,8 @@ const api = {
   login: (email, password) =>
     request("POST", "auth/login", { email, password }),
 
-  register: (email, password) =>
-    request("POST", "auth/register", { email, password }),
+ register: (username, email, password) =>
+  request("POST", "auth/register", { username, email, password }),
 
   getDevices: () => request("GET", "devices"),
 

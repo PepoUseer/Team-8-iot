@@ -45,7 +45,7 @@ export function DevicesPage({ onSelectDevice }) {
   }
 
   const handleAdd = async ({ deviceId }) => {
-    await api.addDevice(deviceId);
+    await api.createDevice(deviceId);
     await fetchDevices();
     setShowAddModal(false);
   };
