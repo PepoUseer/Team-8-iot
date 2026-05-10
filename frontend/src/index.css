@@ -428,7 +428,7 @@ body {
 
 .ab-gauge-label-above {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--ab-text-dim);
   letter-spacing: 0.05em;

@@ -12,7 +12,7 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
   const handleSave = async () => {
   try {
     await api.updateDevice(device.id, {
-      device_name: deviceName,
+      device_name: name,
     });
 
     const updates = Object.entries(sensorMap).map(
@@ -28,7 +28,7 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
     );
 
     await Promise.all(updates);
-
+onSave(local);
     onClose();
     onSaved?.();
   } catch (err) {

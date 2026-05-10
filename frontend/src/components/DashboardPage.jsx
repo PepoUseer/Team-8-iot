@@ -38,7 +38,12 @@ function sensorKey(type) {
   if (t === "pressure") return "pressure";
   return null;
 }
-
+const DEFAULT_LIMITS = {
+  co2:         { min: 350,  max: 1000 },
+  temperature: { min: 20,   max: 26   },
+  humidity:    { min: 40,   max: 60   },
+  pressure:    { min: 1013, max: 1020 },
+};
 export function DashboardPage({ device, user, onBack, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,7 +59,8 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
  //Nahrazení hardcoded limitů
-  const [limits, setLimits] = useState({});
+ 
+  const [limits, setLimits] = useState(DEFAULT_LIMITS);
 const [sensorMap, setSensorMap] = useState({});
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
@@ -99,12 +105,12 @@ const [sensorMap, setSensorMap] = useState({});
   }, [device]);
   //Načtení senzorů při změně zařízení
 useEffect(() => {
-  if (!selectedDeviceId) return;
+  if (!device.id) return;
 
   const loadSensors = async () => {
     try {
-      const sensors = await api.getDeviceSensors(selectedDeviceId);
-
+      const sensors = await api.getDeviceSensors(device.id);
+if (!sensors || sensors.length === 0) return;
       const newLimits = {};
       const newSensorMap = {};
 
@@ -126,7 +132,7 @@ useEffect(() => {
   };
 
   loadSensors();
-}, [selectedDeviceId]);
+}, [device.id]);
   // ── Graph history — reálné API, fallback na mock ────────
   useEffect(() => {
     if (tab !== "graph") return;
@@ -207,18 +213,20 @@ useEffect(() => {
     }
   }, [reading, tab]);
 
-  const statusColor = (val, { min, max }) => {
-    if (val == null) return "rgba(255,255,255,0.2)";
-    if (val < min || val > max) return "#ef4444";
-    const margin = (max - min) * 0.1;
-    if (val < min + margin || val > max - margin) return "#f97316";
-    return "#22c55e";
-  };
+  const statusColor = (val, limits) => {
+  if (val == null || !limits) return "rgba(255,255,255,0.2)";
+  const { min, max } = limits;
+  if (val < min || val > max) return "#ef4444";
+  const margin = (max - min) * 0.1;
+  if (val < min + margin || val > max - margin) return "#f97316";
+  return "#22c55e";
+};
+
+
 
   // Current reading with safe fallbacks
   const r = reading ?? {};
-
-  return (
+ return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {/* ── Nav tabs row ── */}
       <div className="ab-nav-tabs">
@@ -484,11 +492,9 @@ useEffect(() => {
         <SettingsModal
           device={device}
           limits={limits}
-          sensorIds={sensorIds.current}
-          onSave={(newLimits, newName) => {
-            setLimits(newLimits);
-            setSettingsOpen(false);
-          }}
+          sensorMap={sensorMap}
+          
+          onSave={(newLimits) => setLimits(newLimits)}
           onClose={() => setSettingsOpen(false)}
         />
       )}

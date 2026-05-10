@@ -19,7 +19,8 @@ const request = async (method, path, body) => {
       ? `?${new URLSearchParams(body).toString()}`
       : "";
 
-  const res = await fetch(`/api/${path}${query}`, options);
+  const res = await fetch(`${BASE}/${path}${query}`, options);
+
 
   if (!res.ok) {
     throw new Error(await res.text());
