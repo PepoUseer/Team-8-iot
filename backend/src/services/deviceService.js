@@ -239,15 +239,16 @@ class DeviceService {
     /**
      * Link a user to a device
      * @param {string} userId 
-     * @param {string} deviceId 
+     * @param {string} deviceId
+     * @param {string} deviceName 
      */
-    async linkUser(userId, deviceId) {
+    async linkUser(userId, deviceId, deviceName = "New Device") {
         const queryText = `
-            INSERT INTO user_devices (user_id, device_id)
-            VALUES ($1, $2)
-            RETURNING user_id, device_id, added_at
+            INSERT INTO user_devices (user_id, device_id, device_name)
+            VALUES ($1, $2, $3)
+            RETURNING user_id, device_id, device_name, added_at
         `;
-        const result = await db.query(queryText, [userId, deviceId]);
+        const result = await db.query(queryText, [userId, deviceId, deviceName]);
         return result.rows[0] || null;
     }
 
@@ -270,15 +271,49 @@ class DeviceService {
      * Check if a user is linked to a device
      * @param {string} userId 
      * @param {string} deviceId 
-     * @returns {Promise<{user_id: string, device_id: string, added_at: TIMESTAMPTZ}|null>}
+     * @returns {Promise<{user_id: string, device_id: string, device_name: string, added_at: TIMESTAMPTZ}|null>}
      */
     async isUserLinked(userId, deviceId) {
         const queryText = `
-            SELECT user_id, device_id, added_at
+            SELECT user_id, device_id, device_name, added_at
             FROM user_devices
             WHERE user_id = $1 AND device_id = $2
         `;
         const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Get the user-specific name for a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     * @returns {Promise<string|null>} The user's custom name for the device, or null if not set
+     */
+    async getUserGivenName(userId, deviceId) {
+        const queryText = `
+            SELECT device_name
+            FROM user_devices
+            WHERE user_id = $1 AND device_id = $2
+        `;
+        const result = await db.query(queryText, [userId, deviceId]);
+        return result.rows[0]?.device_name || null;
+    }
+
+    /**
+     * Set the user-specific name for a device
+     * @param {string} userId 
+     * @param {string} deviceId 
+     * @param {string} deviceName 
+     * @returns {Promise<{user_id: string, device_id: string, device_name: string, added_at: TIMESTAMPTZ}|null>}
+     */
+    async setUserGivenName(userId, deviceId, deviceName) {
+        const queryText = `
+            UPDATE user_devices
+            SET device_name = $3
+            WHERE user_id = $1 AND device_id = $2
+            RETURNING user_id, device_id, device_name, added_at
+        `;
+        const result = await db.query(queryText, [userId, deviceId, deviceName]);
         return result.rows[0] || null;
     }
 
