@@ -333,11 +333,19 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
+            const userId = req.session.userId;
+            const isLinked = await this.service.isUserLinked(userId, req.params.id);
+            if (!isLinked) {
+                return next(this.unauthorizedError());
+            }
+
             const device = await this.service.get(req.params.id);
 
             if (!device) {
                 return next(this.notFoundError());
             }
+
+            device.device_name = isLinked.device_name;
 
             const readings = await this.service.latestReadings(req.params.id);
             return res.status(200).json({
