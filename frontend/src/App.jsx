@@ -35,6 +35,7 @@ function AppRoutes() {
 
   const dashboardProps = {
     device: selectedDevice,
+    setSelectedDevice,
     user,
     onBack: () => navigate("/devices"),
     onLogout: handleLogout,

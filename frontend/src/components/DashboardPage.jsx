@@ -39,12 +39,18 @@ function sensorKey(type) {
   return null;
 }
 const DEFAULT_LIMITS = {
-  co2:         { min: 350,  max: 1000 },
-  temperature: { min: 20,   max: 26   },
-  humidity:    { min: 40,   max: 60   },
-  pressure:    { min: 1013, max: 1020 },
+  co2: { min: 350, max: 1000 },
+  temperature: { min: 20, max: 26 },
+  humidity: { min: 40, max: 60 },
+  pressure: { min: 1013, max: 1020 },
 };
-export function DashboardPage({ device, user, onBack, onLogout }) {
+export function DashboardPage({
+  device,
+  setSelectedDevice,
+  user,
+  onBack,
+  onLogout,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -58,10 +64,10 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
   const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
- //Nahrazení hardcoded limitů
- 
+  //Nahrazení hardcoded limitů
+
   const [limits, setLimits] = useState(DEFAULT_LIMITS);
-const [sensorMap, setSensorMap] = useState({});
+  const [sensorMap, setSensorMap] = useState({});
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   // Naplní se při prvním fetchLatest ze sensor_id v odpovědi
@@ -104,35 +110,35 @@ const [sensorMap, setSensorMap] = useState({});
     return () => clearInterval(id);
   }, [device]);
   //Načtení senzorů při změně zařízení
-useEffect(() => {
-  if (!device.id) return;
+  useEffect(() => {
+    if (!device.id) return;
 
-  const loadSensors = async () => {
-    try {
-      const sensors = await api.getDeviceSensors(device.id);
-if (!sensors || sensors.length === 0) return;
-      const newLimits = {};
-      const newSensorMap = {};
+    const loadSensors = async () => {
+      try {
+        const sensors = await api.getDeviceSensors(device.id);
+        if (!sensors || sensors.length === 0) return;
+        const newLimits = {};
+        const newSensorMap = {};
 
-      sensors.forEach((sensor) => {
-        newLimits[sensor.sensor_type] = {
-          min: sensor.threshold_min,
-          max: sensor.threshold_max,
-          unit: sensor.unit,
-        };
+        sensors.forEach((sensor) => {
+          newLimits[sensor.sensor_type] = {
+            min: sensor.threshold_min,
+            max: sensor.threshold_max,
+            unit: sensor.unit,
+          };
 
-        newSensorMap[sensor.sensor_type] = sensor.sensor_id;
-      });
+          newSensorMap[sensor.sensor_type] = sensor.sensor_id;
+        });
 
-      setLimits(newLimits);
-      setSensorMap(newSensorMap);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+        setLimits(newLimits);
+        setSensorMap(newSensorMap);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  loadSensors();
-}, [device.id]);
+    loadSensors();
+  }, [device.id]);
   // ── Graph history — reálné API, fallback na mock ────────
   useEffect(() => {
     if (tab !== "graph") return;
@@ -214,19 +220,17 @@ if (!sensors || sensors.length === 0) return;
   }, [reading, tab]);
 
   const statusColor = (val, limits) => {
-  if (val == null || !limits) return "rgba(255,255,255,0.2)";
-  const { min, max } = limits;
-  if (val < min || val > max) return "#ef4444";
-  const margin = (max - min) * 0.1;
-  if (val < min + margin || val > max - margin) return "#f97316";
-  return "#22c55e";
-};
-
-
+    if (val == null || !limits) return "rgba(255,255,255,0.2)";
+    const { min, max } = limits;
+    if (val < min || val > max) return "#ef4444";
+    const margin = (max - min) * 0.1;
+    if (val < min + margin || val > max - margin) return "#f97316";
+    return "#22c55e";
+  };
 
   // Current reading with safe fallbacks
   const r = reading ?? {};
- return (
+  return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {/* ── Nav tabs row ── */}
       <div className="ab-nav-tabs">
@@ -491,9 +495,14 @@ if (!sensors || sensors.length === 0) return;
       {settingsOpen && (
         <SettingsModal
           device={device}
+          onDeviceUpdated={(updated) =>
+            setSelectedDevice({
+              ...device,
+              name: updated.device_name,
+            })
+          }
           limits={limits}
           sensorMap={sensorMap}
-          
           onSave={(newLimits) => setLimits(newLimits)}
           onClose={() => setSettingsOpen(false)}
         />

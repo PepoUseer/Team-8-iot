@@ -15,15 +15,19 @@ const request = async (method, path, body) => {
   }
 
   const query =
-    method === "GET" && body
-      ? `?${new URLSearchParams(body).toString()}`
-      : "";
+    method === "GET" && body ? `?${new URLSearchParams(body).toString()}` : "";
 
   const res = await fetch(`${BASE}/${path}${query}`, options);
 
-
   if (!res.ok) {
-    throw new Error(await res.text());
+    let msg = "Request failed";
+    try {
+      const errData = await res.json();
+      msg = errData?.error?.message || errData?.message || msg;
+    } catch {
+      msg = (await res.text()) || msg;
+    }
+    throw new Error(msg);
   }
 
   return res.status === 204 ? null : res.json();
@@ -33,24 +37,26 @@ const api = {
   login: (email, password) =>
     request("POST", "auth/login", { email, password }),
 
- register: (username, email, password) =>
-  request("POST", "auth/register", { username, email, password }),
+  register: (username, email, password) =>
+    request("POST", "auth/register", { username, email, password }),
 
   getDevices: () => request("GET", "devices"),
 
   getDevice: (id) => request("GET", `devices/${id}`),
 
-  createDevice: (deviceId) =>
-    request("POST", "devices/add", { id: deviceId }),
+  getDeviceLatest: (deviceId) => request("GET", `devices/${deviceId}/latest`),
 
-  updateDevice: (id, data) =>
-    request("PATCH", `devices/${id}`, data),
+  createDevice: (deviceId, name) =>
+    request("POST", "devices/add", {
+      id: deviceId,
+      name,
+    }),
 
-  deleteDevice: (id) =>
-    request("DELETE", `devices/${id}`),
+  updateDevice: (id, data) => request("PATCH", `devices/${id}`, data),
 
-  getDeviceSensors: (deviceId) =>
-    request("GET", `devices/${deviceId}/sensors`),
+  deleteDevice: (id) => request("DELETE", `devices/${id}`),
+
+  getDeviceSensors: (deviceId) => request("GET", `devices/${deviceId}/sensors`),
 
   updateSensor: (sensorId, data) =>
     request("PATCH", `sensors/${sensorId}`, data),
