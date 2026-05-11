@@ -16,6 +16,14 @@ class ControllerBase {
         };
     }
 
+    unauthorizedError() {
+        return {
+            message: "Insufficient permissions",
+            details: "Not allowed to perform operation",
+            status: 403
+        }
+    }
+
     invalidTimestampError() {
         return {
             message: "Invalid timestamp",

@@ -25,10 +25,18 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
+            const userId = req.session.userId;
+            const isLinked = await this.service.isUserLinked(userId, req.params.id);
+            if (!isLinked) {
+                return next(this.unauthorizedError());
+            }
+
             const device = await this.service.get(req.params.id);
             if (!device) {
                 return next(this.notFoundError());
             }
+
+            device.device_name = isLinked.device_name;
 
             return res.status(200).json(device);
         } catch (error) {
@@ -121,11 +129,20 @@ class DeviceController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
-            const updatedDevice = await this.service.update(params.id, params.deviceName);
+            const userId = req.session.userId;
+            const isLinked = await this.service.isUserLinked(userId, req.params.id);
+            if (!isLinked) {
+                return next(this.unauthorizedError());
+            }
 
-            if (!updatedDevice) {
+            const updatedDeviceLink = await this.service.setUserGivenName(userId, params.id, params.deviceName);
+
+            if (!updatedDeviceLink) {
                 return next(this.notFoundError());
             }
+
+            const updatedDevice = await this.service.get(params.id);
+            updatedDevice.device_name = updatedDeviceLink.device_name;
 
             return res.status(200).json(updatedDevice);
         } catch (error) {
@@ -228,6 +245,7 @@ class DeviceController extends ControllerBase {
             type: "object",
             properties: {
                 id: { type: "string" },
+                name: { type: "string" }
             },
             required: ["id"],
             additionalProperties: false
@@ -240,6 +258,7 @@ class DeviceController extends ControllerBase {
 
             const userId = req.session.userId;
             const deviceAlias = req.body.id;
+            const givenName = req.body.name ?? "New Device";
 
             const aliasData = await this.service.getAliasByName(deviceAlias);
              if (!aliasData) {
@@ -259,7 +278,7 @@ class DeviceController extends ControllerBase {
                 });
             }
 
-            const newLink = await this.service.linkUser(userId, aliasData.device_id);
+            const newLink = await this.service.linkUser(userId, aliasData.device_id, givenName);
 
             return res.status(200).json(newLink);
         } catch (error) {
@@ -278,6 +297,14 @@ class DeviceController extends ControllerBase {
             const userId = req.session.userId;
 
             const devices = await this.service.getForUser(userId);
+
+            for (let i = 0; i < devices.length; i++) {
+                const device = devices[i];
+                device.device_name = await this.service.getUserGivenName(
+                    userId,
+                    device.device_id
+                ) ?? device.device_name;
+            }
             
             return res.status(200).json({devices});
         } catch (error) {
