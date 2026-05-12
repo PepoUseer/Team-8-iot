@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { SignInPage } from "@/components/SignInPage";
 import { DevicesPage } from "@/components/DevicesPage";
 import { DashboardPage } from "@/components/DashboardPage";
+import { WorkInProgressPage } from "@/components/WorkInProgressPage";
 
 function AppRoutes() {
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -77,16 +78,18 @@ function AppRoutes() {
             )
           }
         />
-        <Route
-          path="/graphs"
-          element={
-            user && selectedDevice ? (
-              <DashboardPage {...dashboardProps} />
-            ) : (
-              <Navigate to="/auth" replace />
-            )
-          }
-        />
+        {import.meta.env.DEV && (
+          <Route
+            path="/graphs"
+            element={
+              user && selectedDevice ? (
+                <WorkInProgressPage />
+              ) : (
+                <Navigate to="/auth" replace />
+              )
+            }
+          />
+        )}
 
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>

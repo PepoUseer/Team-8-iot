@@ -6,19 +6,6 @@ import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
 
-// ── Fallback mock generator (použije se jen když API selže a ještě nemáme žádná data) ──
-function generateMockReading(prev) {
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const drift = (val, range) => val + (Math.random() - 0.5) * range;
-  return {
-    timestamp: Date.now(),
-    co2: clamp(drift(prev?.co2 ?? 600, 40), 350, 2000),
-    temperature: clamp(drift(prev?.temperature ?? 22, 0.5), 15, 40),
-    humidity: clamp(drift(prev?.humidity ?? 50, 2), 20, 90),
-    pressure: clamp(drift(prev?.pressure ?? 1013, 1), 950, 1080),
-  };
-}
-
 const POLL_MS = 10000;
 
 const RANGE_MS = {
@@ -38,12 +25,14 @@ function sensorKey(type) {
   if (t === "pressure") return "pressure";
   return null;
 }
+
 const DEFAULT_LIMITS = {
   co2: { min: 350, max: 1000 },
   temperature: { min: 20, max: 26 },
   humidity: { min: 40, max: 60 },
   pressure: { min: 1013, max: 1020 },
 };
+
 export function DashboardPage({
   device,
   setSelectedDevice,
@@ -64,13 +53,11 @@ export function DashboardPage({
   const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  //Nahrazení hardcoded limitů
 
   const [limits, setLimits] = useState(DEFAULT_LIMITS);
   const [sensorMap, setSensorMap] = useState({});
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
-  // Naplní se při prvním fetchLatest ze sensor_id v odpovědi
   const sensorIds = useRef({});
 
   // ── Fetch latest readings from backend ─────────────────
@@ -83,7 +70,6 @@ export function DashboardPage({
         const k = sensorKey(s.type);
         if (k) {
           r[k] = parseFloat(s.value);
-          // FIX: uložit sensor_id pro pozdější volání graph API
           sensorIds.current[k] = s.sensor_id;
         }
       }
@@ -97,8 +83,9 @@ export function DashboardPage({
         );
       }
     } catch {
-      // Pokud API selže, zachovat předchozí data nebo vygenerovat mock
-      setReading((prev) => prev ?? generateMockReading(null));
+      // BUG 1 FIX: API selhalo — ponecháme předchozí data beze změny.
+      // Pokud ještě žádná data nemáme, zůstane reading === null a UI zobrazí "—".
+      // Mock data se NEZOBRAZUJÍ.
     }
   }
 
@@ -109,7 +96,8 @@ export function DashboardPage({
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
   }, [device]);
-  //Načtení senzorů při změně zařízení
+
+  // Načtení senzorů při změně zařízení
   useEffect(() => {
     if (!device.id) return;
 
@@ -126,7 +114,6 @@ export function DashboardPage({
             max: sensor.threshold_max,
             unit: sensor.unit,
           };
-
           newSensorMap[sensor.sensor_type] = sensor.sensor_id;
         });
 
@@ -139,21 +126,20 @@ export function DashboardPage({
 
     loadSensors();
   }, [device.id]);
-  // ── Graph history — reálné API, fallback na mock ────────
+
+  // ── Graph history — reálné API, bez mock fallbacku ─────
   useEffect(() => {
     if (tab !== "graph") return;
 
     async function fetchGraphData() {
       setGraphLoading(true);
 
-      // Pokud ještě nemáme sensor ids (fetchLatest ještě neskončil), počkáme
-      // a zkusíme to přes krátký timeout; jinak rovnou mock
       const ids = sensorIds.current;
       const hasIds = Object.keys(ids).length > 0;
 
       if (!hasIds) {
-        // Ještě nemáme ids — zobraz mock a po příštím fetchLatest se useEffect znovu spustí
-        setRangeHistory(generateMockHistory(graphRange));
+        // Ještě nemáme sensor IDs — zobrazíme prázdný stav, počkáme na fetchLatest
+        setRangeHistory([]);
         setGraphLoading(false);
         return;
       }
@@ -162,7 +148,6 @@ export function DashboardPage({
       const start = new Date(Date.now() - RANGE_MS[graphRange]).toISOString();
 
       try {
-        // Paralelně fetch pro všechny dostupné sensory
         const keys = ["co2", "temperature", "humidity", "pressure"];
         const results = await Promise.all(
           keys.map((k) =>
@@ -175,11 +160,10 @@ export function DashboardPage({
           ),
         );
 
-        // Sloučit do pole { timestamp, co2, temperature, humidity, pressure }
-        // Použijeme co2 (nebo první dostupný sensor) jako základ pro timestampy
         const base = results.find((r) => r.data.length > 0);
         if (!base) {
-          setRangeHistory(generateMockHistory(graphRange));
+          // Žádná data ze serveru — zobrazíme prázdný stav, bez mocku
+          setRangeHistory([]);
           setGraphLoading(false);
           return;
         }
@@ -187,7 +171,6 @@ export function DashboardPage({
         const merged = base.data.map((point, i) => {
           const entry = { timestamp: new Date(point.time).getTime() };
           for (const { key, data } of results) {
-            // Najít nejbližší bod pro stejný index (data jsou stejně dlouhá díky sampleCount)
             entry[key] = data[i] != null ? parseFloat(data[i].value) : null;
           }
           return entry;
@@ -195,7 +178,8 @@ export function DashboardPage({
 
         setRangeHistory(merged);
       } catch {
-        setRangeHistory(generateMockHistory(graphRange));
+        // API selhalo — prázdný stav, bez mocku
+        setRangeHistory([]);
       } finally {
         setGraphLoading(false);
       }
@@ -214,7 +198,6 @@ export function DashboardPage({
     const nowHas = Object.keys(curr).length > 0;
     if (wasEmpty && nowHas) {
       prevSensorIdsRef.current = { ...curr };
-      // Trigger graph refetch — změníme graphRange na sebe sama přes dočasný stav
       setGraphRange((r) => r);
     }
   }, [reading, tab]);
@@ -228,8 +211,8 @@ export function DashboardPage({
     return "#22c55e";
   };
 
-  // Current reading with safe fallbacks
   const r = reading ?? {};
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {/* ── Nav tabs row ── */}
@@ -351,7 +334,6 @@ export function DashboardPage({
           </p>
         </div>
 
-        {/* Buttons — both same height (36px) */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             onClick={onBack}
@@ -422,7 +404,7 @@ export function DashboardPage({
           />
           <GaugeCard
             label="Humidity"
-            value={r.humidity != null ? r.humidity.toFixed(1) : "—"}
+            value={r.humidity != null ? r.humidity.toFixed(0) : "—"}
             unit="%"
             color={statusColor(r.humidity, limits.humidity)}
             max={100}
@@ -433,23 +415,17 @@ export function DashboardPage({
             value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
             color={statusColor(r.pressure, limits.pressure)}
-            max={1100}
-            current={r.pressure ?? 0}
+            max={1080}
+            current={r.pressure ?? 950}
           />
         </div>
       )}
 
       {/* ── Graph tab ── */}
       {tab === "graph" && (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              padding: "12px 24px 0",
-              gap: 8,
-            }}
-          >
+        <div style={{ padding: "20px 24px 24px" }}>
+          {/* Range picker */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["day", "week", "month"].map((range) => (
               <button
                 key={range}
@@ -460,12 +436,12 @@ export function DashboardPage({
                       ? "var(--ab-accent)"
                       : "var(--ab-cancel)",
                   border: "none",
-                  borderRadius: 6,
-                  padding: "4px 14px",
+                  borderRadius: 8,
+                  padding: "6px 16px",
                   fontFamily: "var(--font-body)",
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: graphRange === range ? "#000" : "var(--ab-text-dim)",
+                  color: graphRange === range ? "#fff" : "#3C3D3E",
                   cursor: "pointer",
                 }}
               >
@@ -509,26 +485,4 @@ export function DashboardPage({
       )}
     </div>
   );
-}
-
-// ── Mock fallback pro grafy (když API není dostupné) ───────
-function generateMockHistory(graphRange) {
-  const MOCK_POINTS = 40;
-  const windowMs = RANGE_MS[graphRange];
-  const step = windowMs / (MOCK_POINTS - 1);
-  const pts = [];
-  let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const drift = (val, range) => val + (Math.random() - 0.5) * range;
-  for (let i = 0; i < MOCK_POINTS; i++) {
-    r = {
-      timestamp: Date.now() - windowMs + i * step,
-      co2: clamp(drift(r.co2, 40), 350, 2000),
-      temperature: clamp(drift(r.temperature, 0.5), 15, 40),
-      humidity: clamp(drift(r.humidity, 2), 20, 90),
-      pressure: clamp(drift(r.pressure, 1), 950, 1080),
-    };
-    pts.push({ ...r });
-  }
-  return pts;
 }
