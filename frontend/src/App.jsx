@@ -78,18 +78,17 @@ function AppRoutes() {
             )
           }
         />
-        {import.meta.env.DEV && (
-          <Route
-            path="/graphs"
-            element={
-              user && selectedDevice ? (
-                <WorkInProgressPage />
-              ) : (
-                <Navigate to="/auth" replace />
-              )
-            }
-          />
-        )}
+
+        <Route
+          path="/graphs"
+          element={
+            user && selectedDevice ? (
+              <DashboardPage {...dashboardProps} />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
+          }
+        />
 
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>

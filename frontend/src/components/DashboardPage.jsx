@@ -5,9 +5,9 @@ import { GaugeCard } from "@/components/GaugeCard";
 import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
-
+import { WorkInProgressPage } from "@/components/WorkInProgressPage";
 const POLL_MS = 10000;
-
+const GRAPHS_WIP = true;
 const RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
@@ -75,8 +75,17 @@ export function DashboardPage({
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
       if (data.last_update) {
+        const updatedAt = new Date(data.last_update);
+        const ageMs = Date.now() - updatedAt.getTime();
+        const isOld = ageMs > 24 * 60 * 60 * 1000;
+
         setLastUpdated(
-          new Date(data.last_update).toLocaleTimeString("cs-CZ", {
+          updatedAt.toLocaleString("cs-CZ", {
+            ...(isOld && {
+              weekday: "short",
+              day: "numeric",
+              month: "numeric",
+            }),
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -97,6 +106,9 @@ export function DashboardPage({
     return () => clearInterval(id);
   }, [device]);
 
+  useEffect(() => {
+    if (GRAPHS_WIP) setGraphLoading(false);
+  }, []);
   // Načtení senzorů při změně zařízení
   useEffect(() => {
     if (!device.id) return;
@@ -130,7 +142,7 @@ export function DashboardPage({
   // ── Graph history — reálné API, bez mock fallbacku ─────
   useEffect(() => {
     if (tab !== "graph") return;
-
+    if (GRAPHS_WIP) return;
     async function fetchGraphData() {
       setGraphLoading(true);
 
@@ -192,6 +204,7 @@ export function DashboardPage({
   const prevSensorIdsRef = useRef({});
   useEffect(() => {
     if (tab !== "graph") return;
+    if (GRAPHS_WIP) return;
     const prev = prevSensorIdsRef.current;
     const curr = sensorIds.current;
     const wasEmpty = Object.keys(prev).length === 0;
@@ -292,7 +305,6 @@ export function DashboardPage({
           </div>
         )}
       </div>
-
       {/* Device title row */}
       <div
         style={{
@@ -374,7 +386,6 @@ export function DashboardPage({
           </button>
         </div>
       </div>
-
       {/* ── Current values tab ── */}
       {tab === "current" && (
         <div
@@ -420,54 +431,54 @@ export function DashboardPage({
           />
         </div>
       )}
-
       {/* ── Graph tab ── */}
-      {tab === "graph" && (
-        <div style={{ padding: "20px 24px 24px" }}>
-          {/* Range picker */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-            {["day", "week", "month"].map((range) => (
-              <button
-                key={range}
-                onClick={() => setGraphRange(range)}
+
+      {tab === "graph" &&
+        (GRAPHS_WIP ? (
+          <WorkInProgressPage />
+        ) : (
+          <div style={{ padding: "20px 24px 24px" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              {["day", "week", "month"].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setGraphRange(range)}
+                  style={{
+                    background:
+                      graphRange === range
+                        ? "var(--ab-accent)"
+                        : "var(--ab-cancel)",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "6px 16px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: graphRange === range ? "#fff" : "#3C3D3E",
+                    cursor: "pointer",
+                  }}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            {graphLoading ? (
+              <div
                 style={{
-                  background:
-                    graphRange === range
-                      ? "var(--ab-accent)"
-                      : "var(--ab-cancel)",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "6px 16px",
+                  padding: "48px 24px",
+                  textAlign: "center",
                   fontFamily: "var(--font-body)",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: graphRange === range ? "#fff" : "#3C3D3E",
-                  cursor: "pointer",
+                  fontSize: "14px",
+                  color: "var(--ab-text-dim)",
                 }}
               >
-                {range}
-              </button>
-            ))}
+                Loading…
+              </div>
+            ) : (
+              <GraphsPage history={rangeHistory} graphRange={graphRange} />
+            )}
           </div>
-
-          {graphLoading ? (
-            <div
-              style={{
-                padding: "48px 24px",
-                textAlign: "center",
-                fontFamily: "var(--font-body)",
-                fontSize: "14px",
-                color: "var(--ab-text-dim)",
-              }}
-            >
-              Loading…
-            </div>
-          ) : (
-            <GraphsPage history={rangeHistory} graphRange={graphRange} />
-          )}
-        </div>
-      )}
-
+        ))}
       {settingsOpen && (
         <SettingsModal
           device={device}
