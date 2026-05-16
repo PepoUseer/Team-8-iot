@@ -251,8 +251,26 @@ export function DashboardPage({
               className="ab-user-avatar"
               onClick={() => setMenuOpen((o) => !o)}
               title={user.email}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                width: "auto",
+                borderRadius: "22px",
+                padding: "0 12px 0 6px",
+              }}
             >
               <User size={22} />
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "var(--ab-text)",
+                }}
+              >
+                {user.username}
+              </span>
             </button>
 
             {menuOpen && (
