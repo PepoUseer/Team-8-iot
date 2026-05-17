@@ -5,29 +5,18 @@ import { GaugeCard } from "@/components/GaugeCard";
 import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
-
-// ── Fallback mock generator (used only when no real sensor ids available) ──
-function generateMockReading(prev) {
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const drift = (val, range) => val + (Math.random() - 0.5) * range;
-  return {
-    timestamp: Date.now(),
-    co2: clamp(drift(prev?.co2 ?? 600, 40), 350, 2000),
-    temperature: clamp(drift(prev?.temperature ?? 22, 0.5), 15, 40),
-    humidity: clamp(drift(prev?.humidity ?? 50, 2), 20, 90),
-    pressure: clamp(drift(prev?.pressure ?? 1013, 1), 950, 1080),
-  };
-}
-
+import { WorkInProgressPage } from "@/components/WorkInProgressPage";
 const POLL_MS = 10000;
-
+const GRAPHS_WIP = true;
 const RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
   month: 30 * 24 * 60 * 60 * 1000,
 };
 
-// Normalize sensor type string → our internal key
+const GRAPH_SAMPLE_COUNT = 50;
+
+// Normalize sensor type string → náš interní klíč
 function sensorKey(type) {
   const t = (type || "").toLowerCase();
   if (t === "co2") return "co2";
@@ -37,7 +26,20 @@ function sensorKey(type) {
   return null;
 }
 
-export function DashboardPage({ device, user, onBack, onLogout }) {
+const DEFAULT_LIMITS = {
+  co2: { min: 350, max: 1000 },
+  temperature: { min: 20, max: 26 },
+  humidity: { min: 40, max: 60 },
+  pressure: { min: 1013, max: 1020 },
+};
+
+export function DashboardPage({
+  device,
+  setSelectedDevice,
+  user,
+  onBack,
+  onLogout,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,16 +48,14 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
 
   const [graphRange, setGraphRange] = useState("week");
   const [rangeHistory, setRangeHistory] = useState([]);
+  const [graphLoading, setGraphLoading] = useState(false);
   const [reading, setReading] = useState(null);
   const [lastUpdated, setLastUpdated] = useState("—");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [limits, setLimits] = useState({
-    co2: { min: 350, max: 1000 },
-    temperature: { min: 20, max: 26 },
-    humidity: { min: 40, max: 60 },
-    pressure: { min: 1013, max: 1020 },
-  });
+
+  const [limits, setLimits] = useState(DEFAULT_LIMITS);
+  const [sensorMap, setSensorMap] = useState({});
 
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   const sensorIds = useRef({});
@@ -64,57 +64,166 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
   async function fetchLatest() {
     try {
       const data = await api.getDeviceLatest(device.id);
-      // data = { device_id, last_update, readings: [{ type, value, unit }] }
+      // data = { device_id, device_name, last_update, readings: [{ sensor_id, type, unit, time, value }] }
       const r = { timestamp: Date.now() };
       for (const s of data.readings || []) {
         const k = sensorKey(s.type);
-        if (k) r[k] = parseFloat(s.value);
+        if (k) {
+          r[k] = parseFloat(s.value);
+          sensorIds.current[k] = s.sensor_id;
+        }
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
       if (data.last_update) {
+        const updatedAt = new Date(data.last_update);
+        const ageMs = Date.now() - updatedAt.getTime();
+        const isOld = ageMs > 24 * 60 * 60 * 1000;
+
         setLastUpdated(
-          new Date(data.last_update).toLocaleTimeString("cs-CZ", {
+          updatedAt.toLocaleString("cs-CZ", {
+            ...(isOld && {
+              weekday: "short",
+              day: "numeric",
+              month: "numeric",
+            }),
             hour: "2-digit",
             minute: "2-digit",
           }),
         );
       }
     } catch {
-      // If API fails, keep previous / mock values
-      setReading((prev) => prev ?? generateMockReading(null));
+      // BUG 1 FIX: API selhalo — ponecháme předchozí data beze změny.
+      // Pokud ještě žádná data nemáme, zůstane reading === null a UI zobrazí "—".
+      // Mock data se NEZOBRAZUJÍ.
     }
   }
 
   useEffect(() => {
     setReading(null);
+    sensorIds.current = {};
     fetchLatest();
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
   }, [device]);
 
-  // ── Graph history (mock until sensor readings endpoint wired per-chart) ──
   useEffect(() => {
-    const MOCK_POINTS = 40;
-    const windowMs = RANGE_MS[graphRange];
-    const step = windowMs / (MOCK_POINTS - 1);
-    const pts = [];
-    let r = { co2: 600, temperature: 22, humidity: 50, pressure: 1013 };
-    for (let i = 0; i < MOCK_POINTS; i++) {
-      r = generateMockReading(r);
-      pts.push({ ...r, timestamp: Date.now() - windowMs + i * step });
-    }
-    setRangeHistory(pts);
-  }, [graphRange, device]);
+    if (GRAPHS_WIP) setGraphLoading(false);
+  }, []);
+  // Načtení senzorů při změně zařízení
+  useEffect(() => {
+    if (!device.id) return;
 
-  const statusColor = (val, { min, max }) => {
-    if (val == null) return "rgba(255,255,255,0.2)";
+    const loadSensors = async () => {
+      try {
+        const sensors = await api.getDeviceSensors(device.id);
+        if (!sensors || sensors.length === 0) return;
+        const newLimits = {};
+        const newSensorMap = {};
+
+        sensors.forEach((sensor) => {
+          newLimits[sensor.sensor_type] = {
+            min: sensor.threshold_min,
+            max: sensor.threshold_max,
+            unit: sensor.unit,
+          };
+          newSensorMap[sensor.sensor_type] = sensor.sensor_id;
+        });
+
+        setLimits(newLimits);
+        setSensorMap(newSensorMap);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadSensors();
+  }, [device.id]);
+
+  // ── Graph history — reálné API, bez mock fallbacku ─────
+  useEffect(() => {
+    if (tab !== "graph") return;
+    if (GRAPHS_WIP) return;
+    async function fetchGraphData() {
+      setGraphLoading(true);
+
+      const ids = sensorIds.current;
+      const hasIds = Object.keys(ids).length > 0;
+
+      if (!hasIds) {
+        // Ještě nemáme sensor IDs — zobrazíme prázdný stav, počkáme na fetchLatest
+        setRangeHistory([]);
+        setGraphLoading(false);
+        return;
+      }
+
+      const end = new Date().toISOString();
+      const start = new Date(Date.now() - RANGE_MS[graphRange]).toISOString();
+
+      try {
+        const keys = ["co2", "temperature", "humidity", "pressure"];
+        const results = await Promise.all(
+          keys.map((k) =>
+            ids[k]
+              ? api
+                  .getSensorReadings(ids[k], start, end, GRAPH_SAMPLE_COUNT)
+                  .then((res) => ({ key: k, data: res.data || [] }))
+                  .catch(() => ({ key: k, data: [] }))
+              : Promise.resolve({ key: k, data: [] }),
+          ),
+        );
+
+        const base = results.find((r) => r.data.length > 0);
+        if (!base) {
+          // Žádná data ze serveru — zobrazíme prázdný stav, bez mocku
+          setRangeHistory([]);
+          setGraphLoading(false);
+          return;
+        }
+
+        const merged = base.data.map((point, i) => {
+          const entry = { timestamp: new Date(point.time).getTime() };
+          for (const { key, data } of results) {
+            entry[key] = data[i] != null ? parseFloat(data[i].value) : null;
+          }
+          return entry;
+        });
+
+        setRangeHistory(merged);
+      } catch {
+        // API selhalo — prázdný stav, bez mocku
+        setRangeHistory([]);
+      } finally {
+        setGraphLoading(false);
+      }
+    }
+
+    fetchGraphData();
+  }, [graphRange, device, tab]);
+
+  // Re-fetch graph když se naplní sensorIds (po prvním fetchLatest)
+  const prevSensorIdsRef = useRef({});
+  useEffect(() => {
+    if (tab !== "graph") return;
+    if (GRAPHS_WIP) return;
+    const prev = prevSensorIdsRef.current;
+    const curr = sensorIds.current;
+    const wasEmpty = Object.keys(prev).length === 0;
+    const nowHas = Object.keys(curr).length > 0;
+    if (wasEmpty && nowHas) {
+      prevSensorIdsRef.current = { ...curr };
+      setGraphRange((r) => r);
+    }
+  }, [reading, tab]);
+
+  const statusColor = (val, limits) => {
+    if (val == null || !limits) return "rgba(255,255,255,0.2)";
+    const { min, max } = limits;
     if (val < min || val > max) return "#ef4444";
     const margin = (max - min) * 0.1;
     if (val < min + margin || val > max - margin) return "#f97316";
     return "#22c55e";
   };
 
-  // Current reading with safe fallbacks
   const r = reading ?? {};
 
   return (
@@ -164,12 +273,27 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
                   style={{
                     padding: "8px 16px 10px",
                     fontFamily: "var(--font-body)",
-                    fontSize: "13px",
-                    color: "var(--ab-placeholder)",
                     borderBottom: "1px solid rgba(255,255,255,0.1)",
                   }}
                 >
-                  {user.email}
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "var(--ab-text)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {user.username}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--ab-placeholder)",
+                    }}
+                  >
+                    {user.email}
+                  </div>
                 </div>
                 <button
                   onClick={() => {
@@ -196,7 +320,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           </div>
         )}
       </div>
-
       {/* Device title row */}
       <div
         style={{
@@ -238,7 +361,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           </p>
         </div>
 
-        {/* Buttons — both same height (36px) */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             onClick={onBack}
@@ -259,7 +381,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           >
             change device
           </button>
-          {/* Settings button — same height as "change device" */}
           <button
             onClick={() => setSettingsOpen(true)}
             style={{
@@ -280,7 +401,6 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           </button>
         </div>
       </div>
-
       {/* ── Current values tab ── */}
       {tab === "current" && (
         <div
@@ -310,7 +430,7 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
           />
           <GaugeCard
             label="Humidity"
-            value={r.humidity != null ? r.humidity.toFixed(1) : "—"}
+            value={r.humidity != null ? r.humidity.toFixed(0) : "—"}
             unit="%"
             color={statusColor(r.humidity, limits.humidity)}
             max={100}
@@ -321,59 +441,71 @@ export function DashboardPage({ device, user, onBack, onLogout }) {
             value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
             color={statusColor(r.pressure, limits.pressure)}
-            max={1100}
-            current={r.pressure ?? 0}
+            max={1080}
+            current={r.pressure ?? 950}
           />
         </div>
       )}
-
       {/* ── Graph tab ── */}
-      {tab === "graph" && (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              padding: "12px 24px 0",
-              gap: 8,
-            }}
-          >
-            {["day", "week", "month"].map((range) => (
-              <button
-                key={range}
-                onClick={() => setGraphRange(range)}
+
+      {tab === "graph" &&
+        (GRAPHS_WIP ? (
+          <WorkInProgressPage />
+        ) : (
+          <div style={{ padding: "20px 24px 24px" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              {["day", "week", "month"].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setGraphRange(range)}
+                  style={{
+                    background:
+                      graphRange === range
+                        ? "var(--ab-accent)"
+                        : "var(--ab-cancel)",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "6px 16px",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: graphRange === range ? "#fff" : "#3C3D3E",
+                    cursor: "pointer",
+                  }}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+            {graphLoading ? (
+              <div
                 style={{
-                  background:
-                    graphRange === range
-                      ? "var(--ab-accent)"
-                      : "var(--ab-cancel)",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "4px 14px",
+                  padding: "48px 24px",
+                  textAlign: "center",
                   fontFamily: "var(--font-body)",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: graphRange === range ? "#000" : "var(--ab-text-dim)",
-                  cursor: "pointer",
+                  fontSize: "14px",
+                  color: "var(--ab-text-dim)",
                 }}
               >
-                {range}
-              </button>
-            ))}
+                Loading…
+              </div>
+            ) : (
+              <GraphsPage history={rangeHistory} graphRange={graphRange} />
+            )}
           </div>
-
-          <GraphsPage history={rangeHistory} graphRange={graphRange} />
-        </div>
-      )}
-
+        ))}
       {settingsOpen && (
         <SettingsModal
           device={device}
+          onDeviceUpdated={(updated) =>
+            setSelectedDevice({
+              ...device,
+              name: updated.device_name,
+            })
+          }
           limits={limits}
-          onSave={(newLimits) => {
-            setLimits(newLimits);
-            setSettingsOpen(false);
-          }}
+          sensorMap={sensorMap}
+          onSave={(newLimits) => setLimits(newLimits)}
           onClose={() => setSettingsOpen(false)}
         />
       )}

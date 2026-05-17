@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS device_aliases (
 CREATE TABLE IF NOT EXISTS user_devices (
     user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
     device_id UUID REFERENCES devices(device_id) ON DELETE CASCADE,
+    device_name VARCHAR(100),
     added_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (user_id, device_id)
 );

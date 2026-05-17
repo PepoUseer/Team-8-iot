@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { SignInPage } from "@/components/SignInPage";
 import { DevicesPage } from "@/components/DevicesPage";
 import { DashboardPage } from "@/components/DashboardPage";
+import { WorkInProgressPage } from "@/components/WorkInProgressPage";
 
 function AppRoutes() {
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -35,6 +36,7 @@ function AppRoutes() {
 
   const dashboardProps = {
     device: selectedDevice,
+    setSelectedDevice,
     user,
     onBack: () => navigate("/devices"),
     onLogout: handleLogout,
@@ -76,6 +78,7 @@ function AppRoutes() {
             )
           }
         />
+
         <Route
           path="/graphs"
           element={

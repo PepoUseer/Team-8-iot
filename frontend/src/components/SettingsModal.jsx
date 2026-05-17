@@ -1,17 +1,55 @@
 import { useState } from "react";
+import { api } from "@/api";
 
-export function SettingsModal({ device, limits, onSave, onClose }) {
+// FIX: přidány props sensorMap (potřebné pro update senzorů)
+export function SettingsModal({
+  device,
+  limits,
+  sensorMap,
+  onSave,
+  onClose,
+  onDeviceUpdated,
+}) {
   const [name, setName] = useState(device.name);
   const [local, setLocal] = useState({ ...limits });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const setMin = (key, val) =>
     setLocal((l) => ({ ...l, [key]: { ...l[key], min: Number(val) } }));
   const setMax = (key, val) =>
     setLocal((l) => ({ ...l, [key]: { ...l[key], max: Number(val) } }));
 
-  const handleSave = (e) => {
+  // FIX: e.preventDefault() aby form nedělal native submit (= reload stránky)
+  const handleSave = async (e) => {
     e.preventDefault();
-    onSave(local);
+    setSaving(true);
+    setError("");
+    try {
+      // Ulož název zařízení
+      const updated = await api.updateDevice(device.id, { deviceName: name });
+
+      // Ulož limity senzorů
+      if (sensorMap && Object.keys(sensorMap).length > 0) {
+        await Promise.all(
+          Object.entries(sensorMap).map(([type, sensorId]) => {
+            const limit = local[type];
+            if (!limit) return Promise.resolve();
+            return api.updateSensor(sensorId, {
+              thresholdMin: limit.min,
+              thresholdMax: limit.max,
+            });
+          }),
+        );
+      }
+      onDeviceUpdated(updated);
+      onSave(local);
+      onClose();
+    } catch (err) {
+      setError(err.message || "Uložení se nezdařilo.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -31,6 +69,7 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
           ✕
         </button>
 
+        {/* FIX: onSubmit na form — handleSave má e.preventDefault() */}
         <form onSubmit={handleSave}>
           {/* Change device name */}
           <h2 className="ab-modal-title">Change device name</h2>
@@ -76,7 +115,7 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
                     <input
                       className="ab-range-input"
                       type="number"
-                      value={local[key].min}
+                      value={local[key]?.min ?? ""}
                       onChange={(e) => setMin(key, e.target.value)}
                     />
                     <span className="ab-range-unit-inside">{unit}</span>
@@ -89,7 +128,7 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
                     <input
                       className="ab-range-input"
                       type="number"
-                      value={local[key].max}
+                      value={local[key]?.max ?? ""}
                       onChange={(e) => setMax(key, e.target.value)}
                     />
                     <span className="ab-range-unit-inside">{unit}</span>
@@ -99,6 +138,19 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
             ))}
           </div>
 
+          {error && (
+            <p
+              style={{
+                color: "#ef4444",
+                fontSize: "13px",
+                marginBottom: 12,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {error}
+            </p>
+          )}
+
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <button type="button" className="ab-btn-cancel" onClick={onClose}>
               cancel
@@ -107,8 +159,9 @@ export function SettingsModal({ device, limits, onSave, onClose }) {
               type="submit"
               className="ab-btn ready"
               style={{ minWidth: 112 }}
+              disabled={saving}
             >
-              Save
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
