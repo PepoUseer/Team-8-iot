@@ -251,26 +251,8 @@ export function DashboardPage({
               className="ab-user-avatar"
               onClick={() => setMenuOpen((o) => !o)}
               title={user.email}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                width: "auto",
-                borderRadius: "22px",
-                padding: "0 12px 0 6px",
-              }}
             >
               <User size={22} />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "var(--ab-text)",
-                }}
-              >
-                {user.username}
-              </span>
             </button>
 
             {menuOpen && (
@@ -291,12 +273,27 @@ export function DashboardPage({
                   style={{
                     padding: "8px 16px 10px",
                     fontFamily: "var(--font-body)",
-                    fontSize: "13px",
-                    color: "var(--ab-placeholder)",
                     borderBottom: "1px solid rgba(255,255,255,0.1)",
                   }}
                 >
-                  {user.email}
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "var(--ab-text)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {user.username}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--ab-placeholder)",
+                    }}
+                  >
+                    {user.email}
+                  </div>
                 </div>
                 <button
                   onClick={() => {
