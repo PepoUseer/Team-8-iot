@@ -6,6 +6,12 @@ import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
 import { WorkInProgressPage } from "@/components/WorkInProgressPage";
+import { useAlerts } from "@/hooks/useAlerts";
+
+import {
+  NotificationBell,
+  useNotifications,
+} from "@/components/NotificationBell";
 const POLL_MS = 10000;
 const GRAPHS_WIP = true;
 const RANGE_MS = {
@@ -57,6 +63,9 @@ export function DashboardPage({
   const [limits, setLimits] = useState(DEFAULT_LIMITS);
   const [sensorMap, setSensorMap] = useState({});
 
+  //Notifikace
+  const { notify, muteUntilRef, bellProps } = useNotifications();
+  const { checkReadings } = useAlerts(notify, muteUntilRef, 60 * 60 * 1000); //1 upozornění za hodinu
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   const sensorIds = useRef({});
 
@@ -74,6 +83,7 @@ export function DashboardPage({
         }
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
+      checkReadings(r, limits, device.name);
       if (data.last_update) {
         const updatedAt = new Date(data.last_update);
         const ageMs = Date.now() - updatedAt.getTime();
@@ -246,77 +256,90 @@ export function DashboardPage({
         </button>
 
         {user && (
-          <div style={{ position: "relative", marginLeft: "auto" }}>
-            <button
-              className="ab-user-avatar"
-              onClick={() => setMenuOpen((o) => !o)}
-              title={user.email}
-            >
-              <User size={22} />
-            </button>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginLeft: "auto",
+            }}
+          >
+            {/* Notification Bell */}
+            <NotificationBell {...bellProps} />
 
-            {menuOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "52px",
-                  background: "#434446",
-                  borderRadius: "10px",
-                  minWidth: "180px",
-                  padding: "8px 0",
-                  zIndex: 50,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                }}
+            {/* Wrapper pro avatar a menu */}
+            <div style={{ position: "relative" }}>
+              <button
+                className="ab-user-avatar"
+                onClick={() => setMenuOpen((o) => !o)}
+                title={user.email}
               >
+                <User size={22} />
+              </button>
+
+              {menuOpen && (
                 <div
                   style={{
-                    padding: "8px 16px 10px",
-                    fontFamily: "var(--font-body)",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    position: "absolute",
+                    right: 0,
+                    top: "52px",
+                    background: "#434446",
+                    borderRadius: "10px",
+                    minWidth: "180px",
+                    padding: "8px 0",
+                    zIndex: 50,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
+                      padding: "8px 16px 10px",
+                      fontFamily: "var(--font-body)",
+                      borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "var(--ab-text)",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      {user.username}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--ab-placeholder)",
+                      }}
+                    >
+                      {user.email}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout && onLogout();
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "10px 16px",
+                      background: "none",
+                      border: "none",
                       color: "var(--ab-text)",
-                      marginBottom: "2px",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      textAlign: "left",
+                      cursor: "pointer",
                     }}
                   >
-                    {user.username}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--ab-placeholder)",
-                    }}
-                  >
-                    {user.email}
-                  </div>
+                    Log out
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onLogout && onLogout();
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px 16px",
-                    background: "none",
-                    border: "none",
-                    color: "var(--ab-text)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    textAlign: "left",
-                    cursor: "pointer",
-                  }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
