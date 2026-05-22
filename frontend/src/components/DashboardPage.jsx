@@ -233,7 +233,7 @@ export function DashboardPage({
     if (val == null || !limits) return "rgba(255,255,255,0.2)";
     const { min, max } = limits;
     if (val < min || val > max) return "#ef4444";
-    const margin = (max - min) * 0.1;
+    const margin = (max - min) * 0.2;
     if (val < min + margin || val > max - margin) return "#f97316";
     return "#22c55e";
   };
@@ -444,7 +444,7 @@ export function DashboardPage({
             value={r.co2 != null ? r.co2.toFixed(0) : "—"}
             unit="ppm"
             color={statusColor(r.co2, limits.co2)}
-            max={2000}
+            max={limits.co2.max}
             current={r.co2 ?? 0}
           />
           <GaugeCard
@@ -452,7 +452,7 @@ export function DashboardPage({
             value={r.temperature != null ? r.temperature.toFixed(1) : "—"}
             unit="°C"
             color={statusColor(r.temperature, limits.temperature)}
-            max={50}
+            max={limits.temperature.max}
             current={r.temperature ?? 0}
           />
           <GaugeCard
@@ -460,7 +460,7 @@ export function DashboardPage({
             value={r.humidity != null ? r.humidity.toFixed(0) : "—"}
             unit="%"
             color={statusColor(r.humidity, limits.humidity)}
-            max={100}
+            max={limits.humidity.max}
             current={r.humidity ?? 0}
           />
           <GaugeCard
@@ -468,7 +468,7 @@ export function DashboardPage({
             value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
             color={statusColor(r.pressure, limits.pressure)}
-            max={1080}
+            max={limits.pressure.max}
             current={r.pressure ?? 950}
           />
         </div>
