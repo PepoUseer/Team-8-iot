@@ -1,5 +1,7 @@
 // ── API base URL ──────────────────────────────────────────
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
+//v env nastavit VITE_SHOW_MOCK_DEVICE=true/false
+const MOCK_ENABLED = import.meta.env.VITE_SHOW_MOCK_DEVICE === "true";
 
 const request = async (method, path, body) => {
   const options = {
@@ -37,13 +39,14 @@ const request = async (method, path, body) => {
 //
 // Toto zařízení se zobrazí v seznamu zařízení vedle reálných.
 // CO2 je záměrně nad limitem (1200 ppm > max 1000) → spustí alert + zvuk.
+// Aktivuje se přes VITE_SHOW_MOCK_DEVICE=true v .env
 //
 const MOCK_DEVICE_ID = "mock-demo-device-001";
 
 const MOCK_DEVICE = {
   device_id: MOCK_DEVICE_ID,
   device_name: "Demo kancelář",
-  last_update: new Date().toISOString(), // "online"
+  last_update: new Date().toISOString(),
 };
 
 const MOCK_SENSORS = [
@@ -81,7 +84,6 @@ const MOCK_SENSORS = [
   },
 ];
 
-// Aktuální hodnoty — CO2 nad limitem záměrně
 const MOCK_LATEST_READINGS = [
   {
     sensor_id: "mock-s-co2",
@@ -113,7 +115,6 @@ const MOCK_LATEST_READINGS = [
   },
 ];
 
-// Generátor historických dat pro grafy
 function generateMockReadings(sensorId, days, baseValue, amplitude, noiseAmp) {
   const now = Date.now();
   const points = 50;
@@ -122,10 +123,8 @@ function generateMockReadings(sensorId, days, baseValue, amplitude, noiseAmp) {
 
   for (let i = 0; i < points; i++) {
     const t = now - rangeMs + (rangeMs / (points - 1)) * i;
-    // Sinusová vlna + náhoda = realistický průběh
     const wave = Math.sin((i / points) * Math.PI * 4) * amplitude;
     const noise = (Math.random() - 0.5) * noiseAmp;
-    // Poslední bod záměrně nad limitem pro CO2
     const isCo2 = sensorId === "mock-s-co2";
     const spike = isCo2 && i >= points - 5 ? 300 + Math.random() * 100 : 0;
     data.push({
@@ -153,13 +152,7 @@ function isMockSensor(id) {
 }
 
 function mockGetDevices(realData) {
-  const mockEntry = {
-    id: MOCK_DEVICE_ID,
-    device_id: MOCK_DEVICE_ID,
-    device_name: MOCK_DEVICE.device_name,
-    last_update: MOCK_DEVICE.last_update,
-  };
-  // Přidáme mock zařízení na začátek seznamu
+  if (!MOCK_ENABLED) return realData ?? { devices: [] };
   return {
     devices: [MOCK_DEVICE, ...(realData?.devices ?? [])],
   };
@@ -183,14 +176,14 @@ const api = {
   },
 
   getDevice: (id) => {
-    if (isMockDevice(id)) {
+    if (MOCK_ENABLED && isMockDevice(id)) {
       return Promise.resolve(MOCK_DEVICE);
     }
     return request("GET", `devices/${id}`);
   },
 
   getDeviceLatest: (deviceId) => {
-    if (isMockDevice(deviceId)) {
+    if (MOCK_ENABLED && isMockDevice(deviceId)) {
       return Promise.resolve({
         ...MOCK_DEVICE,
         readings: MOCK_LATEST_READINGS,
@@ -206,7 +199,7 @@ const api = {
     }),
 
   updateDevice: (id, data) => {
-    if (isMockDevice(id)) {
+    if (MOCK_ENABLED && isMockDevice(id)) {
       return Promise.resolve({
         device_id: id,
         device_name: data.deviceName ?? MOCK_DEVICE.device_name,
@@ -216,28 +209,26 @@ const api = {
   },
 
   deleteDevice: (id) => {
-    if (isMockDevice(id)) return Promise.resolve(null);
+    if (MOCK_ENABLED && isMockDevice(id)) return Promise.resolve(null);
     return request("DELETE", `devices/${id}`);
   },
 
   getDeviceSensors: (deviceId) => {
-    if (isMockDevice(deviceId)) {
+    if (MOCK_ENABLED && isMockDevice(deviceId)) {
       return Promise.resolve(MOCK_SENSORS);
     }
     return request("GET", `devices/${deviceId}/sensors`);
   },
 
   updateSensor: (sensorId, data) => {
-    if (isMockSensor(sensorId)) return Promise.resolve(null);
+    if (MOCK_ENABLED && isMockSensor(sensorId)) return Promise.resolve(null);
     return request("PATCH", `sensors/${sensorId}`, data);
   },
 
   getSensorReadings: (sensorId, start, end, sampleCount = 50) => {
-    if (isMockSensor(sensorId)) {
+    if (MOCK_ENABLED && isMockSensor(sensorId)) {
       const cfg = MOCK_GRAPH_DATA[sensorId];
-      const startMs = new Date(start).getTime();
-      const endMs = new Date(end).getTime();
-      const days = (endMs - startMs) / (1000 * 60 * 60 * 24);
+      const days = (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24);
       const data = generateMockReadings(
         sensorId,
         days,
