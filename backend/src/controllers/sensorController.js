@@ -163,7 +163,7 @@ class SensorController extends ControllerBase {
                 id: { type: "string" },
                 start: { type: "string" },
                 end: { type: "string" },
-                sampleCount: { type: "integer" }
+                sampleCount: { }
             },
             required: ["id", "start", "end", "sampleCount"],
             additionalProperties: false
