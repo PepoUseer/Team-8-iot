@@ -15,6 +15,7 @@ import {
 const POLL_MS = 10000;
 const GRAPHS_WIP = false;
 const RANGE_MS = {
+  hour: 60 * 60 * 1000,
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
   month: 30 * 24 * 60 * 60 * 1000,
@@ -200,7 +201,7 @@ export function DashboardPage({
           }
           return entry;
         });
-
+        console.log("merged history:", merged);
         setRangeHistory(merged);
       } catch {
         // API selhalo — prázdný stav, bez mocku

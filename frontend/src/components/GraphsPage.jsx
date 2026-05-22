@@ -10,7 +10,7 @@ import { LineGraph } from "@/components/LineGraph";
  *   loading    – boolean
  */
 export function GraphsPage({ history, graphRange, onRangeChange, loading }) {
-  const ranges = ["day", "week", "month"];
+  const ranges = ["hour", "day", "week", "month"];
 
   return (
     <div style={{ padding: "0 24px 24px" }}>
@@ -47,6 +47,7 @@ export function GraphsPage({ history, graphRange, onRangeChange, loading }) {
             field="co2"
             unit="ppm"
             color="#f97316"
+            range={graphRange}
           />
           <LineGraph
             title="Temperature"
@@ -54,6 +55,7 @@ export function GraphsPage({ history, graphRange, onRangeChange, loading }) {
             field="temperature"
             unit="°C"
             color="#3b82f6"
+            range={graphRange}
           />
           <LineGraph
             title="Humidity"
@@ -61,6 +63,7 @@ export function GraphsPage({ history, graphRange, onRangeChange, loading }) {
             field="humidity"
             unit="%"
             color="#ef4444"
+            range={graphRange}
           />
           <LineGraph
             title="Barometric pressure"
@@ -68,6 +71,7 @@ export function GraphsPage({ history, graphRange, onRangeChange, loading }) {
             field="pressure"
             unit="hPa"
             color="#22c55e"
+            range={graphRange}
           />
         </div>
       )}
