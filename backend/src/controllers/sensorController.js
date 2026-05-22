@@ -168,10 +168,7 @@ class SensorController extends ControllerBase {
       additionalProperties: false,
     };
     try {
-      const params = { ...req.params, ...req.query, ...req.body };
-      if (params.sampleCount !== undefined) {
-        params.sampleCount = Number(params.sampleCount);
-      }
+      const params = { ...req.params, ...req.body };
       const validationResult = this.validate(schema, params);
       if (!validationResult.success) {
         return next(validationResult.errorDetails);
