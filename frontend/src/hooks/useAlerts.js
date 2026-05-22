@@ -15,7 +15,7 @@ import { useRef, useCallback } from "react";
  * @param {number} repeatIntervalMs
  */
 
-const DEFAULT_REPEAT_MS = 15 * 60 * 1000;
+const DEFAULT_REPEAT_MS = 60 * 60 * 1000;
 
 export const SENSOR_LABELS = {
   co2: "CO₂",

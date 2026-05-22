@@ -13,7 +13,7 @@ import {
   useNotifications,
 } from "@/components/NotificationBell";
 const POLL_MS = 10000;
-const GRAPHS_WIP = true;
+const GRAPHS_WIP = false;
 const RANGE_MS = {
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
@@ -156,14 +156,17 @@ export function DashboardPage({
     async function fetchGraphData() {
       setGraphLoading(true);
 
-      const ids = sensorIds.current;
+      let ids = sensorIds.current;
       const hasIds = Object.keys(ids).length > 0;
 
       if (!hasIds) {
-        // Ještě nemáme sensor IDs — zobrazíme prázdný stav, počkáme na fetchLatest
-        setRangeHistory([]);
-        setGraphLoading(false);
-        return;
+        await fetchLatest();
+        ids = sensorIds.current; // musíš také změnit `const ids` na `let ids` o pár řádků výš
+        if (Object.keys(ids).length === 0) {
+          setRangeHistory([]);
+          setGraphLoading(false);
+          return;
+        }
       }
 
       const end = new Date().toISOString();
@@ -476,30 +479,6 @@ export function DashboardPage({
           <WorkInProgressPage />
         ) : (
           <div style={{ padding: "20px 24px 24px" }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              {["day", "week", "month"].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setGraphRange(range)}
-                  style={{
-                    background:
-                      graphRange === range
-                        ? "var(--ab-accent)"
-                        : "var(--ab-cancel)",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "6px 16px",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: graphRange === range ? "#fff" : "#3C3D3E",
-                    cursor: "pointer",
-                  }}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
             {graphLoading ? (
               <div
                 style={{
@@ -513,7 +492,12 @@ export function DashboardPage({
                 Loading…
               </div>
             ) : (
-              <GraphsPage history={rangeHistory} graphRange={graphRange} />
+              <GraphsPage
+                history={rangeHistory}
+                graphRange={graphRange}
+                onRangeChange={setGraphRange}
+                loading={graphLoading}
+              />
             )}
           </div>
         ))}

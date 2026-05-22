@@ -720,3 +720,209 @@ a,
   user-select: none !important;
   white-space: nowrap;
 }
+
+/* ── Graph page — timeframe selector ─────────────────── */
+.ab-graph-timeframe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 0 14px;
+}
+
+.ab-graph-timeframe-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-text-dim);
+  margin-right: 4px;
+  text-transform: lowercase;
+}
+
+.ab-graph-range-btn {
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--ab-cancel);
+  color: #3c3d3e;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s;
+  text-transform: lowercase;
+}
+
+.ab-graph-range-btn.active {
+  background: var(--ab-accent);
+  color: #fff;
+}
+
+.ab-graph-range-btn:hover:not(.active) {
+  background: #8e8e8e;
+}
+
+/* ── Graph empty/loading state ────────────────────────── */
+.ab-graph-empty {
+  padding: 48px 24px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ab-text-dim);
+}
+
+/* ── Graph grid ───────────────────────────────────────── */
+/* Override existing .ab-graph-grid if needed — same 2x2 grid */
+.ab-graph-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Graph card ───────────────────────────────────────── */
+.ab-graph-card {
+  background: var(--ab-tab-active);
+  border-radius: 10px;
+  padding: 14px 16px 10px;
+  overflow: hidden;
+}
+
+.ab-graph-title {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ab-text);
+  margin-bottom: 10px;
+}
+
+/* ── LineGraph layout ─────────────────────────────────── */
+.ab-linegraph-wrap {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Y-axis labels column */
+.ab-linegraph-yaxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-right: 8px;
+  flex-shrink: 0;
+  width: 60px;
+  padding-bottom: 20px; /* align with x-axis label area */
+}
+
+.ab-linegraph-ylabel {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: right;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Chart + X-axis container */
+.ab-linegraph-chart-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── charts.css overrides ─────────────────────────────── */
+/* Force the chart table to fill the card nicely */
+.ab-linegraph-chart-wrap .charts-css {
+  height: 120px !important;
+  max-block-size: 120px !important;
+  border: none !important;
+}
+
+/* Remove default charts.css background/border */
+.ab-linegraph-chart-wrap .charts-css.line {
+  --color: #f97316; /* fallback, overridden per chart */
+  --aspect-ratio: auto;
+  background: transparent !important;
+}
+
+/* Line segment color — uses --color from inline style */
+.ab-linegraph-chart-wrap .charts-css.line tbody td::after {
+  background: transparent;
+}
+
+/* The line itself: use the --color variable */
+.ab-linegraph-chart-wrap .charts-css.line tbody td::before {
+  background-color: transparent !important;
+}
+
+/* charts.css line chart draws via SVG-like --color — we style the stroke */
+.ab-linegraph-chart-wrap .charts-css.line {
+  --color: inherit;
+}
+
+/* Data labels inside chart cells */
+.ab-linegraph-chart-wrap .charts-css tbody td .data {
+  display: none; /* hide data labels to keep chart clean */
+}
+
+/* Primary axis line */
+.ab-linegraph-chart-wrap .charts-css.show-primary-axis {
+  --primary-axis-color: rgba(255, 255, 255, 0.08);
+  --primary-axis-width: 1px;
+  --primary-axis-style: solid;
+}
+
+/* Data axes (horizontal grid lines) */
+.ab-linegraph-chart-wrap .charts-css.show-data-axes {
+  --data-axes-color: rgba(255, 255, 255, 0.05);
+  --data-axes-width: 1px;
+  --data-axes-style: solid;
+}
+
+/* ── X-axis labels row ────────────────────────────────── */
+.ab-linegraph-xaxis {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 4px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.ab-linegraph-xlabel {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  white-space: nowrap;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* charts.css — oprava Tailwind resetu */
+.charts-css {
+  border-collapse: separate !important;
+}
+
+.charts-css tbody {
+  display: flex !important;
+  align-items: flex-end !important;
+}
+
+.charts-css.line tbody tr {
+  display: flex !important;
+  flex: 1 !important;
+  flex-direction: column-reverse !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+.charts-css.line tbody td {
+  display: block !important;
+  width: 100% !important;
+  position: relative !important;
+}

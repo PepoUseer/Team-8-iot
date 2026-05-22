@@ -1,124 +1,130 @@
 /**
- * Lightweight SVG line graph – no external charting lib needed.
+ * LineGraph — charts.css powered line chart
+ *
  * Props:
  *   title   – string
- *   data    – array of { timestamp, [field]: number }
+ *   data    – array of { timestamp: number, [field]: number }
  *   field   – key name in data items
  *   unit    – string suffix
- *   color   – stroke colour
+ *   color   – CSS color string (used for the line accent)
  */
 export function LineGraph({ title, data, field, unit, color }) {
   if (!data || data.length < 2) return null;
 
-  const W = 360,
-    H = 160,
-    PAD = { top: 12, right: 12, bottom: 28, left: 44 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
+  // Downsample to exactly 7 evenly-spaced points for the chart
+  const POINTS = 7;
+  const sampled = [];
+  for (let i = 0; i < POINTS; i++) {
+    const idx = Math.round((i / (POINTS - 1)) * (data.length - 1));
+    sampled.push(data[idx]);
+  }
 
-  const values = data.map((d) => d[field]);
+  const values = sampled.map((d) => d[field]).filter((v) => v != null);
+  if (values.length < 2) return null;
+
   const minV = Math.min(...values);
   const maxV = Math.max(...values);
   const range = maxV - minV || 1;
 
-  const xScale = (i) => PAD.left + (i / (data.length - 1)) * innerW;
-  const yScale = (v) => PAD.top + innerH - ((v - minV) / range) * innerH;
+  // charts.css needs --size: value between 0 and 1 (relative to chart height)
+  // We add a 10% padding so the line doesn't clip at edges
+  const PAD = 0.1;
+  const normalize = (v) => PAD + ((v - minV) / range) * (1 - 2 * PAD);
 
-  // Build polyline points
-  const points = data
-    .map((d, i) => `${xScale(i)},${yScale(d[field])}`)
-    .join(" ");
+  // Y-axis labels: 5 ticks from min to max
+  const TICKS = 5;
+  const yTicks = Array.from({ length: TICKS }, (_, i) => {
+    const v = minV + (i / (TICKS - 1)) * range;
+    return Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1);
+  });
 
-  // Y-axis labels (3 ticks)
-  const ticks = [minV, minV + range / 2, maxV].map((v, i) => ({
-    y: yScale(v),
-    label: Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1),
-  }));
-
-  // X-axis labels (first, mid, last)
-  const xLabels = [0, Math.floor((data.length - 1) / 2), data.length - 1].map(
-    (i) => ({
-      x: xScale(i),
-      label: new Date(data[i].timestamp).toLocaleDateString("cs-CZ", {
-        day: "numeric",
-        month: "numeric",
-      }),
+  // X-axis labels: timestamps from sampled points
+  const xLabels = sampled.map((d) =>
+    new Date(d.timestamp).toLocaleDateString("cs-CZ", {
+      day: "numeric",
+      month: "numeric",
     }),
   );
+
+  const cssId = `chart-${title.replace(/\s+/g, "-").toLowerCase()}`;
 
   return (
     <div className="ab-graph-card">
       <div className="ab-graph-title">{title}</div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
-        {/* Grid lines */}
-        {ticks.map((t, i) => (
-          <line
-            key={i}
-            x1={PAD.left}
-            x2={W - PAD.right}
-            y1={t.y}
-            y2={t.y}
-            stroke="rgba(255,255,255,0.07)"
-            strokeWidth="1"
-          />
-        ))}
 
-        {/* Y labels */}
-        {ticks.map((t, i) => (
-          <text
-            key={i}
-            x={PAD.left - 6}
-            y={t.y + 4}
-            textAnchor="end"
-            fill="rgba(255,255,255,0.4)"
-            fontSize="10"
-            fontFamily="var(--font-body)"
+      <div className="ab-linegraph-wrap">
+        {/* Y-axis labels */}
+        <div className="ab-linegraph-yaxis">
+          {[...yTicks].reverse().map((label, i) => (
+            <span key={i} className="ab-linegraph-ylabel">
+              {label} {unit}
+            </span>
+          ))}
+        </div>
+
+        {/* charts.css table */}
+        <div className="ab-linegraph-chart-wrap">
+          <style>{`
+            #${cssId} {
+              --color: ${color};
+              --labels-size: 0px;
+              --legend-inline-size: 0px;
+            }
+            #${cssId} tbody td {
+              color: ${color};
+            }
+          `}</style>
+
+          <table
+            id={cssId}
+            className="charts-css line show-data-axes show-primary-axis"
           >
-            {t.label} {unit}
-          </text>
-        ))}
+            <caption style={{ display: "none" }}>{title}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Label</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sampled.map((d, i) => {
+                const val = d[field];
+                const size = val != null ? normalize(val) : 0;
+                const prevVal = i > 0 ? sampled[i - 1][field] : val;
+                const prevSize = prevVal != null ? normalize(prevVal) : size;
+                return (
+                  <tr key={i}>
+                    <th scope="row">{xLabels[i]}</th>
+                    <td
+                      style={{
+                        "--size": size,
+                        "--start": prevSize,
+                      }}
+                    >
+                      <span className="data">
+                        {val != null
+                          ? Number.isInteger(val)
+                            ? val.toFixed(0)
+                            : val.toFixed(1)
+                          : "—"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
-        {/* X labels */}
-        {xLabels.map((l, i) => (
-          <text
-            key={i}
-            x={l.x}
-            y={H - 4}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.4)"
-            fontSize="10"
-            fontFamily="var(--font-body)"
-          >
-            {l.label}
-          </text>
-        ))}
-
-        {/* Area fill */}
-        <polyline
-          points={`${xScale(0)},${PAD.top + innerH} ${points} ${xScale(data.length - 1)},${PAD.top + innerH}`}
-          fill={color}
-          fillOpacity="0.08"
-          stroke="none"
-        />
-
-        {/* Line */}
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-
-        {/* Last point dot */}
-        <circle
-          cx={xScale(data.length - 1)}
-          cy={yScale(values[values.length - 1])}
-          r="4"
-          fill={color}
-        />
-      </svg>
+          {/* X-axis labels below */}
+          <div className="ab-linegraph-xaxis">
+            {xLabels.map((label, i) => (
+              <span key={i} className="ab-linegraph-xlabel">
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
