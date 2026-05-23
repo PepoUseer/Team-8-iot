@@ -63,12 +63,19 @@ export function DashboardPage({
 
   const [limits, setLimits] = useState(DEFAULT_LIMITS);
   const [sensorMap, setSensorMap] = useState({});
+  const [limitsLoaded, setLimitsLoaded] = useState(false); // FIX: počkej na limity z DB
 
   //Notifikace
   const { notify, muteUntilRef, bellProps } = useNotifications();
   const { checkReadings } = useAlerts(notify, muteUntilRef, 60 * 60 * 1000); //1 upozornění za hodinu
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   const sensorIds = useRef({});
+
+  // Ref pro aktuální limity — aby fetchLatest vždy viděl nejnovější hodnotu
+  const limitsRef = useRef(limits);
+  useEffect(() => {
+    limitsRef.current = limits;
+  }, [limits]);
 
   // ── Fetch latest readings from backend ─────────────────
   async function fetchLatest() {
@@ -84,7 +91,7 @@ export function DashboardPage({
         }
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
-      checkReadings(r, limits, device.name);
+      checkReadings(r, limitsRef.current, device.name); // FIX: použij ref, ne stale closure
       if (data.last_update) {
         const updatedAt = new Date(data.last_update);
         const ageMs = Date.now() - updatedAt.getTime();
@@ -109,25 +116,32 @@ export function DashboardPage({
     }
   }
 
+  // FIX: polling startuje až po načtení limitů z DB
   useEffect(() => {
+    if (!limitsLoaded) return;
     setReading(null);
     sensorIds.current = {};
     fetchLatest();
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
-  }, [device]);
+  }, [device, limitsLoaded]);
 
   useEffect(() => {
     if (GRAPHS_WIP) setGraphLoading(false);
   }, []);
+
   // Načtení senzorů při změně zařízení
   useEffect(() => {
     if (!device.id) return;
+    setLimitsLoaded(false); // FIX: reset při změně zařízení
 
     const loadSensors = async () => {
       try {
         const sensors = await api.getDeviceSensors(device.id);
-        if (!sensors || sensors.length === 0) return;
+        if (!sensors || sensors.length === 0) {
+          setLimitsLoaded(true); // i bez senzorů pustíme polling s DEFAULT_LIMITS
+          return;
+        }
         const newLimits = {};
         const newSensorMap = {};
 
@@ -144,6 +158,8 @@ export function DashboardPage({
         setSensorMap(newSensorMap);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLimitsLoaded(true); // FIX: vždy odblokuj polling, i při chybě
       }
     };
 
@@ -162,7 +178,7 @@ export function DashboardPage({
 
       if (!hasIds) {
         await fetchLatest();
-        ids = sensorIds.current; // musíš také změnit `const ids` na `let ids` o pár řádků výš
+        ids = sensorIds.current;
         if (Object.keys(ids).length === 0) {
           setRangeHistory([]);
           setGraphLoading(false);
@@ -188,7 +204,6 @@ export function DashboardPage({
 
         const base = results.find((r) => r.data.length > 0);
         if (!base) {
-          // Žádná data ze serveru — zobrazíme prázdný stav, bez mocku
           setRangeHistory([]);
           setGraphLoading(false);
           return;
@@ -204,7 +219,6 @@ export function DashboardPage({
         console.log("merged history:", merged);
         setRangeHistory(merged);
       } catch {
-        // API selhalo — prázdný stav, bez mocku
         setRangeHistory([]);
       } finally {
         setGraphLoading(false);
@@ -444,7 +458,7 @@ export function DashboardPage({
             value={r.co2 != null ? r.co2.toFixed(0) : "—"}
             unit="ppm"
             color={statusColor(r.co2, limits.co2)}
-            max={limits.co2.max}
+            max={limits.co2?.max ?? DEFAULT_LIMITS.co2.max}
             current={r.co2 ?? 0}
           />
           <GaugeCard
@@ -452,7 +466,7 @@ export function DashboardPage({
             value={r.temperature != null ? r.temperature.toFixed(1) : "—"}
             unit="°C"
             color={statusColor(r.temperature, limits.temperature)}
-            max={limits.temperature.max}
+            max={limits.temperature?.max ?? DEFAULT_LIMITS.temperature.max}
             current={r.temperature ?? 0}
           />
           <GaugeCard
@@ -460,7 +474,7 @@ export function DashboardPage({
             value={r.humidity != null ? r.humidity.toFixed(0) : "—"}
             unit="%"
             color={statusColor(r.humidity, limits.humidity)}
-            max={limits.humidity.max}
+            max={limits.humidity?.max ?? DEFAULT_LIMITS.humidity.max}
             current={r.humidity ?? 0}
           />
           <GaugeCard
@@ -468,7 +482,7 @@ export function DashboardPage({
             value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
             color={statusColor(r.pressure, limits.pressure)}
-            max={limits.pressure.max}
+            max={limits.pressure?.max ?? DEFAULT_LIMITS.pressure.max}
             current={r.pressure ?? 950}
           />
         </div>
