@@ -148,64 +148,69 @@ class SensorController extends ControllerBase {
     } catch (error) {
       return next(error);
     }
-  }
 
-  /**
-   * @param {import("express").Request} req - Express request
-   * @param {import("express").Response} res - Express response
-   * @param {import("express").NextFunction} next - Next function
-   */
-  async getReadings(req, res, next) {
-    const schema = {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-        start: { type: "string" },
-        end: { type: "string" },
-        sampleCount: { type: "integer" },
-      },
-      required: ["id"],
-      additionalProperties: false,
-    };
-    try {
-      const params = { ...req.params, ...req.body };
-      const validationResult = this.validate(schema, params);
-      if (!validationResult.success) {
-        return next(validationResult.errorDetails);
-      }
+    /**
+     * @param {import("express").Request} req - Express request
+     * @param {import("express").Response} res - Express response
+     * @param {import("express").NextFunction} next - Next function
+     */
+    async getReadings(req, res, next) {
+        const schema = {
+            type: "object",
+            properties: {
+                id: { type: "string" },
+                start: { type: "string" },
+                end: { type: "string" },
+                sampleCount: { }
+            },
+            required: ["id", "start", "end", "sampleCount"],
+            additionalProperties: false
+        };
+        try {
+            const params = {...req.params, ...req.query, ...req.body};
+            const validationResult = this.validate(schema, params);
+            if (!validationResult.success) {
+                return next(validationResult.errorDetails);
+            }
 
-      const start = new Date(params.start);
-      const end = new Date(params.end);
-      if (!this.validateDate(start) || !this.validateDate(end)) {
-        return next(this.invalidTimestampError());
-      }
-      if (start > end) {
-        return next({
-          message: "Invalid timespan",
-          details: "Start date cannot be later than end date",
-          status: 400,
-        });
-      }
+            const sensor = await this.service.get(params.id);
+            if (!sensor) {
+                return next(this.notFoundError());
+            }
 
-      const range = end - start;
-      const dates = [start];
-      // Don't need to generate start and end date
-      const toGenerate = params.sampleCount - 2;
-      const increment = range / (params.sampleCount - 1);
-      for (let i = 1; i <= toGenerate; i++) {
-        const offset = increment * i;
-        dates.push(new Date(start.getTime() + offset));
-      }
-      dates.push(end);
+            const start = new Date(params.start);
+            const end = new Date(params.end);
+            if (!this.validateDate(start) || !this.validateDate(end)) {
+                return next(this.invalidTimestampError());
+            }
+            if (start > end) {
+                return next({
+                    message: "Invalid timespan",
+                    details: "Start date cannot be later than end date",
+                    status: 400
+                })
+            }
 
-      const readings = await this.service.readingsByDates(params.id, dates);
+            const range = end - start;
+            const dates = [start];
+            // Don't need to generate start and end date
+            const toGenerate = params.sampleCount - 2;
+            const increment = range / (params.sampleCount - 1);
+            for (let i = 1; i <= toGenerate; i++) {
+                const offset = increment * i;
+                dates.push(new Date(start.getTime() + offset));
+            }
+            dates.push(end);
 
-      return res.status(200).json({
-        id: params.id,
-        data: readings,
-      });
-    } catch (error) {
-      return next(error);
+            const readings = await this.service.readingsByDates(params.id, dates);
+
+            return res.status(200).json({
+                id: params.id,
+                data: readings
+            });
+        } catch (error) {
+            return next(error);
+        }
     }
   }
 }
