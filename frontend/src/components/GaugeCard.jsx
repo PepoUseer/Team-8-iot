@@ -1,6 +1,7 @@
 /* ── Gauge card with SVG arc ─────────────────────────── */
 export function GaugeCard({ label, value, unit, color, max, current }) {
   const pct = Math.min(current / max, 1);
+  const pctClamped = Math.min(pct, 0.9999);
 
   const r = 68,
     cx = 84,
@@ -10,11 +11,11 @@ export function GaugeCard({ label, value, unit, color, max, current }) {
   const toRad = (d) => (d * Math.PI) / 180;
   const arc = (a) => [cx + r * Math.cos(toRad(a)), cy + r * Math.sin(toRad(a))];
   const totalAngle = endAngle - startAngle;
-  const currentAngle = startAngle + totalAngle * pct;
+  const currentAngle = startAngle + totalAngle * pctClamped;
 
   const [sx, sy] = arc(startAngle);
   const [ex, ey] = arc(currentAngle);
-  const largeArc = totalAngle * pct > 180 ? 1 : 0;
+  const largeArc = totalAngle * pctClamped > 180 ? 1 : 0;
 
   const [tsx, tsy] = arc(startAngle);
   const [tex, tey] = arc(endAngle);

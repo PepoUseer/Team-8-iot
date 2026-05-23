@@ -1,124 +1,115 @@
-/**
- * Lightweight SVG line graph – no external charting lib needed.
- * Props:
- *   title   – string
- *   data    – array of { timestamp, [field]: number }
- *   field   – key name in data items
- *   unit    – string suffix
- *   color   – stroke colour
- */
-export function LineGraph({ title, data, field, unit, color }) {
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+// Pevné intervaly podle rozsahu
+const INTERVAL_MS = {
+  hour: 10 * 60 * 1000, // každých 10 minut
+  day: 4 * 60 * 60 * 1000, // každé 4 hodiny
+  week: 24 * 60 * 60 * 1000, // každý den
+  month: 5 * 24 * 60 * 60 * 1000, // každých 5 dní
+};
+
+function formatLabel(timestamp, range) {
+  const d = new Date(timestamp);
+  if (range === "hour" || range === "day") {
+    return d.toLocaleTimeString("cs-CZ", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  if (range === "week") {
+    return d.toLocaleDateString("cs-CZ", {
+      weekday: "short",
+      day: "numeric",
+      month: "numeric",
+    });
+  }
+  return d.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
+}
+
+// Najde nejbližší datový bod k danému timestampu
+function findNearest(data, timestamp) {
+  return data.reduce((prev, curr) =>
+    Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp)
+      ? curr
+      : prev,
+  );
+}
+
+export function LineGraph({ title, data, field, unit, color, range }) {
   if (!data || data.length < 2) return null;
 
-  const W = 360,
-    H = 160,
-    PAD = { top: 12, right: 12, bottom: 28, left: 44 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
+  const interval = INTERVAL_MS[range] ?? INTERVAL_MS.day;
+  const start = data[0].timestamp;
+  const end = data[data.length - 1].timestamp;
 
-  const values = data.map((d) => d[field]);
-  const minV = Math.min(...values);
-  const maxV = Math.max(...values);
-  const range = maxV - minV || 1;
+  // Vygeneruj pevné časové body
+  const ticks = [];
+  for (let t = start; t <= end; t += interval) {
+    ticks.push(t);
+  }
+  // Vždy zahrň poslední bod
+  if (ticks[ticks.length - 1] < end) ticks.push(end);
 
-  const xScale = (i) => PAD.left + (i / (data.length - 1)) * innerW;
-  const yScale = (v) => PAD.top + innerH - ((v - minV) / range) * innerH;
-
-  // Build polyline points
-  const points = data
-    .map((d, i) => `${xScale(i)},${yScale(d[field])}`)
-    .join(" ");
-
-  // Y-axis labels (3 ticks)
-  const ticks = [minV, minV + range / 2, maxV].map((v, i) => ({
-    y: yScale(v),
-    label: Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1),
-  }));
-
-  // X-axis labels (first, mid, last)
-  const xLabels = [0, Math.floor((data.length - 1) / 2), data.length - 1].map(
-    (i) => ({
-      x: xScale(i),
-      label: new Date(data[i].timestamp).toLocaleDateString("cs-CZ", {
-        day: "numeric",
-        month: "numeric",
-      }),
-    }),
-  );
+  // Pro každý tick najdi nejbližší datový bod
+  const formatted = ticks.map((t) => {
+    const nearest = findNearest(data, t);
+    return {
+      ...nearest,
+      timestamp: t,
+      label: formatLabel(t, range),
+    };
+  });
 
   return (
     <div className="ab-graph-card">
       <div className="ab-graph-title">{title}</div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
-        {/* Grid lines */}
-        {ticks.map((t, i) => (
-          <line
-            key={i}
-            x1={PAD.left}
-            x2={W - PAD.right}
-            y1={t.y}
-            y2={t.y}
-            stroke="rgba(255,255,255,0.07)"
-            strokeWidth="1"
-          />
-        ))}
-
-        {/* Y labels */}
-        {ticks.map((t, i) => (
-          <text
-            key={i}
-            x={PAD.left - 6}
-            y={t.y + 4}
-            textAnchor="end"
-            fill="rgba(255,255,255,0.4)"
-            fontSize="10"
-            fontFamily="var(--font-body)"
+      <div style={{ width: "100%", height: 220 }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart
+            data={formatted}
+            margin={{ top: 8, right: 8, left: -25, bottom: 0 }}
           >
-            {t.label} {unit}
-          </text>
-        ))}
-
-        {/* X labels */}
-        {xLabels.map((l, i) => (
-          <text
-            key={i}
-            x={l.x}
-            y={H - 4}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.4)"
-            fontSize="10"
-            fontFamily="var(--font-body)"
-          >
-            {l.label}
-          </text>
-        ))}
-
-        {/* Area fill */}
-        <polyline
-          points={`${xScale(0)},${PAD.top + innerH} ${points} ${xScale(data.length - 1)},${PAD.top + innerH}`}
-          fill={color}
-          fillOpacity="0.08"
-          stroke="none"
-        />
-
-        {/* Line */}
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-
-        {/* Last point dot */}
-        <circle
-          cx={xScale(data.length - 1)}
-          cy={yScale(values[values.length - 1])}
-          r="4"
-          fill={color}
-        />
-      </svg>
+            <XAxis
+              dataKey="label"
+              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 15 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 15 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `${v} ${unit}`}
+              width={80}
+            />
+            <Tooltip
+              contentStyle={{
+                background: "#2a2b2c",
+                border: "none",
+                borderRadius: 6,
+              }}
+              labelStyle={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}
+              itemStyle={{ color, fontSize: 14 }}
+              formatter={(v) => [`${v} ${unit}`, title]}
+            />
+            <Line
+              type="monotone"
+              dataKey={field}
+              stroke={color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

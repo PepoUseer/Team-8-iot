@@ -6,9 +6,16 @@ import { GraphsPage } from "@/components/GraphsPage";
 import { SettingsModal } from "@/components/SettingsModal";
 import { api } from "@/api";
 import { WorkInProgressPage } from "@/components/WorkInProgressPage";
+import { useAlerts } from "@/hooks/useAlerts";
+
+import {
+  NotificationBell,
+  useNotifications,
+} from "@/components/NotificationBell";
 const POLL_MS = 10000;
-const GRAPHS_WIP = true;
+const GRAPHS_WIP = false;
 const RANGE_MS = {
+  hour: 60 * 60 * 1000,
   day: 24 * 60 * 60 * 1000,
   week: 7 * 24 * 60 * 60 * 1000,
   month: 30 * 24 * 60 * 60 * 1000,
@@ -56,9 +63,19 @@ export function DashboardPage({
 
   const [limits, setLimits] = useState(DEFAULT_LIMITS);
   const [sensorMap, setSensorMap] = useState({});
+  const [limitsLoaded, setLimitsLoaded] = useState(false); // FIX: počkej na limity z DB
 
+  //Notifikace
+  const { notify, muteUntilRef, bellProps } = useNotifications();
+  const { checkReadings } = useAlerts(notify, muteUntilRef, 60 * 60 * 1000); //1 upozornění za hodinu
   // Sensor id map: { co2: uuid, temperature: uuid, ... }
   const sensorIds = useRef({});
+
+  // Ref pro aktuální limity — aby fetchLatest vždy viděl nejnovější hodnotu
+  const limitsRef = useRef(limits);
+  useEffect(() => {
+    limitsRef.current = limits;
+  }, [limits]);
 
   // ── Fetch latest readings from backend ─────────────────
   async function fetchLatest() {
@@ -74,6 +91,7 @@ export function DashboardPage({
         }
       }
       setReading((prev) => ({ ...(prev ?? {}), ...r }));
+      checkReadings(r, limitsRef.current, device.name); // FIX: použij ref, ne stale closure
       if (data.last_update) {
         const updatedAt = new Date(data.last_update);
         const ageMs = Date.now() - updatedAt.getTime();
@@ -98,25 +116,32 @@ export function DashboardPage({
     }
   }
 
+  // FIX: polling startuje až po načtení limitů z DB
   useEffect(() => {
+    if (!limitsLoaded) return;
     setReading(null);
     sensorIds.current = {};
     fetchLatest();
     const id = setInterval(fetchLatest, POLL_MS);
     return () => clearInterval(id);
-  }, [device]);
+  }, [device, limitsLoaded]);
 
   useEffect(() => {
     if (GRAPHS_WIP) setGraphLoading(false);
   }, []);
+
   // Načtení senzorů při změně zařízení
   useEffect(() => {
     if (!device.id) return;
+    setLimitsLoaded(false); // FIX: reset při změně zařízení
 
     const loadSensors = async () => {
       try {
         const sensors = await api.getDeviceSensors(device.id);
-        if (!sensors || sensors.length === 0) return;
+        if (!sensors || sensors.length === 0) {
+          setLimitsLoaded(true); // i bez senzorů pustíme polling s DEFAULT_LIMITS
+          return;
+        }
         const newLimits = {};
         const newSensorMap = {};
 
@@ -133,6 +158,8 @@ export function DashboardPage({
         setSensorMap(newSensorMap);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLimitsLoaded(true); // FIX: vždy odblokuj polling, i při chybě
       }
     };
 
@@ -146,14 +173,17 @@ export function DashboardPage({
     async function fetchGraphData() {
       setGraphLoading(true);
 
-      const ids = sensorIds.current;
+      let ids = sensorIds.current;
       const hasIds = Object.keys(ids).length > 0;
 
       if (!hasIds) {
-        // Ještě nemáme sensor IDs — zobrazíme prázdný stav, počkáme na fetchLatest
-        setRangeHistory([]);
-        setGraphLoading(false);
-        return;
+        await fetchLatest();
+        ids = sensorIds.current;
+        if (Object.keys(ids).length === 0) {
+          setRangeHistory([]);
+          setGraphLoading(false);
+          return;
+        }
       }
 
       const end = new Date().toISOString();
@@ -174,7 +204,6 @@ export function DashboardPage({
 
         const base = results.find((r) => r.data.length > 0);
         if (!base) {
-          // Žádná data ze serveru — zobrazíme prázdný stav, bez mocku
           setRangeHistory([]);
           setGraphLoading(false);
           return;
@@ -187,10 +216,9 @@ export function DashboardPage({
           }
           return entry;
         });
-
+        console.log("merged history:", merged);
         setRangeHistory(merged);
       } catch {
-        // API selhalo — prázdný stav, bez mocku
         setRangeHistory([]);
       } finally {
         setGraphLoading(false);
@@ -219,7 +247,7 @@ export function DashboardPage({
     if (val == null || !limits) return "rgba(255,255,255,0.2)";
     const { min, max } = limits;
     if (val < min || val > max) return "#ef4444";
-    const margin = (max - min) * 0.1;
+    const margin = (max - min) * 0.2;
     if (val < min + margin || val > max - margin) return "#f97316";
     return "#22c55e";
   };
@@ -246,77 +274,90 @@ export function DashboardPage({
         </button>
 
         {user && (
-          <div style={{ position: "relative", marginLeft: "auto" }}>
-            <button
-              className="ab-user-avatar"
-              onClick={() => setMenuOpen((o) => !o)}
-              title={user.email}
-            >
-              <User size={22} />
-            </button>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginLeft: "auto",
+            }}
+          >
+            {/* Notification Bell */}
+            <NotificationBell {...bellProps} />
 
-            {menuOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "52px",
-                  background: "#434446",
-                  borderRadius: "10px",
-                  minWidth: "180px",
-                  padding: "8px 0",
-                  zIndex: 50,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                }}
+            {/* Wrapper pro avatar a menu */}
+            <div style={{ position: "relative" }}>
+              <button
+                className="ab-user-avatar"
+                onClick={() => setMenuOpen((o) => !o)}
+                title={user.email}
               >
+                <User size={22} />
+              </button>
+
+              {menuOpen && (
                 <div
                   style={{
-                    padding: "8px 16px 10px",
-                    fontFamily: "var(--font-body)",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    position: "absolute",
+                    right: 0,
+                    top: "52px",
+                    background: "#434446",
+                    borderRadius: "10px",
+                    minWidth: "180px",
+                    padding: "8px 0",
+                    zIndex: 50,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
+                      padding: "8px 16px 10px",
+                      fontFamily: "var(--font-body)",
+                      borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "var(--ab-text)",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      {user.username}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--ab-placeholder)",
+                      }}
+                    >
+                      {user.email}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout && onLogout();
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "10px 16px",
+                      background: "none",
+                      border: "none",
                       color: "var(--ab-text)",
-                      marginBottom: "2px",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      textAlign: "left",
+                      cursor: "pointer",
                     }}
                   >
-                    {user.username}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--ab-placeholder)",
-                    }}
-                  >
-                    {user.email}
-                  </div>
+                    Log out
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onLogout && onLogout();
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px 16px",
-                    background: "none",
-                    border: "none",
-                    color: "var(--ab-text)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    textAlign: "left",
-                    cursor: "pointer",
-                  }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -417,7 +458,7 @@ export function DashboardPage({
             value={r.co2 != null ? r.co2.toFixed(0) : "—"}
             unit="ppm"
             color={statusColor(r.co2, limits.co2)}
-            max={2000}
+            max={limits.co2?.max ?? DEFAULT_LIMITS.co2.max}
             current={r.co2 ?? 0}
           />
           <GaugeCard
@@ -425,7 +466,7 @@ export function DashboardPage({
             value={r.temperature != null ? r.temperature.toFixed(1) : "—"}
             unit="°C"
             color={statusColor(r.temperature, limits.temperature)}
-            max={50}
+            max={limits.temperature?.max ?? DEFAULT_LIMITS.temperature.max}
             current={r.temperature ?? 0}
           />
           <GaugeCard
@@ -433,7 +474,7 @@ export function DashboardPage({
             value={r.humidity != null ? r.humidity.toFixed(0) : "—"}
             unit="%"
             color={statusColor(r.humidity, limits.humidity)}
-            max={100}
+            max={limits.humidity?.max ?? DEFAULT_LIMITS.humidity.max}
             current={r.humidity ?? 0}
           />
           <GaugeCard
@@ -441,7 +482,7 @@ export function DashboardPage({
             value={r.pressure != null ? r.pressure.toFixed(0) : "—"}
             unit="hPa"
             color={statusColor(r.pressure, limits.pressure)}
-            max={1080}
+            max={limits.pressure?.max ?? DEFAULT_LIMITS.pressure.max}
             current={r.pressure ?? 950}
           />
         </div>
@@ -452,31 +493,7 @@ export function DashboardPage({
         (GRAPHS_WIP ? (
           <WorkInProgressPage />
         ) : (
-          <div style={{ padding: "20px 24px 24px" }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              {["day", "week", "month"].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setGraphRange(range)}
-                  style={{
-                    background:
-                      graphRange === range
-                        ? "var(--ab-accent)"
-                        : "var(--ab-cancel)",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "6px 16px",
-                    fontFamily: "var(--font-body)",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: graphRange === range ? "#fff" : "#3C3D3E",
-                    cursor: "pointer",
-                  }}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
+          <div style={{ padding: "20px 24px 24px 0" }}>
             {graphLoading ? (
               <div
                 style={{
@@ -490,7 +507,12 @@ export function DashboardPage({
                 Loading…
               </div>
             ) : (
-              <GraphsPage history={rangeHistory} graphRange={graphRange} />
+              <GraphsPage
+                history={rangeHistory}
+                graphRange={graphRange}
+                onRangeChange={setGraphRange}
+                loading={graphLoading}
+              />
             )}
           </div>
         ))}
