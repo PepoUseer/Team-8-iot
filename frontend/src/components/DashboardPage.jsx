@@ -493,7 +493,7 @@ export function DashboardPage({
         (GRAPHS_WIP ? (
           <WorkInProgressPage />
         ) : (
-          <div style={{ padding: "20px 24px 24px" }}>
+          <div style={{ padding: "20px 24px 24px 0" }}>
             {graphLoading ? (
               <div
                 style={{

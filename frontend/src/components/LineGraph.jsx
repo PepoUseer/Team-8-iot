@@ -87,7 +87,7 @@ export function LineGraph({ title, data, field, unit, color, range }) {
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v} ${unit}`}
-              width={72}
+              width={80}
             />
             <Tooltip
               contentStyle={{
