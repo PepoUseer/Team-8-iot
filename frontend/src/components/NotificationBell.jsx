@@ -138,7 +138,7 @@ const MUTE_PRESETS = [
   { label: "15 min", ms: 15 * 60 * 1000 },
   { label: "30 min", ms: 30 * 60 * 1000 },
   { label: "1 hour", ms: 60 * 60 * 1000 },
-  { label: "Custom", ms: null },
+  { label: "∞", ms: Number.MAX_SAFE_INTEGER },
 ];
 
 function MuteModal({ onConfirm, onCancel }) {
@@ -147,7 +147,7 @@ function MuteModal({ onConfirm, onCancel }) {
 
   function handleConfirm() {
     const preset = MUTE_PRESETS[selected];
-    const ms = preset.ms ?? parseInt(customMin, 10) * 60 * 1000;
+    const ms = preset.ms;
     if (!ms || ms <= 0) return;
     onConfirm(ms);
   }
@@ -254,38 +254,6 @@ function MuteModal({ onConfirm, onCancel }) {
             </button>
           ))}
         </div>
-
-        {/* Custom input */}
-        {selected === 3 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 4,
-            }}
-          >
-            <input
-              type="number"
-              min="1"
-              max="480"
-              value={customMin}
-              onChange={(e) => setCustomMin(e.target.value)}
-              className="ab-range-input"
-              style={{ width: 100 }}
-              autoFocus
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 14,
-                color: "var(--ab-text-dim)",
-              }}
-            >
-              minutes
-            </span>
-          </div>
-        )}
 
         {/* Actions */}
         <div
