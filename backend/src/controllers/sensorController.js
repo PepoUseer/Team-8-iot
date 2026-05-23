@@ -175,6 +175,11 @@ class SensorController extends ControllerBase {
                 return next(validationResult.errorDetails);
             }
 
+            const sensor = await this.service.get(params.id);
+            if (!sensor) {
+                return next(this.notFoundError());
+            }
+
             const start = new Date(params.start);
             const end = new Date(params.end);
             if (!this.validateDate(start) || !this.validateDate(end)) {
