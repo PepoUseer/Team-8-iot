@@ -74,7 +74,7 @@ export function LineGraph({ title, data, field, unit, color, range }) {
         <ResponsiveContainer width="100%" height={220}>
           <LineChart
             data={formatted}
-            margin={{ top: 8, right: 20, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: -25, bottom: 0 }}
           >
             <XAxis
               dataKey="label"
@@ -87,7 +87,7 @@ export function LineGraph({ title, data, field, unit, color, range }) {
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v} ${unit}`}
-              width={85}
+              width={72}
             />
             <Tooltip
               contentStyle={{
