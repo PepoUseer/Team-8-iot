@@ -70,24 +70,24 @@ export function LineGraph({ title, data, field, unit, color, range }) {
   return (
     <div className="ab-graph-card">
       <div className="ab-graph-title">{title}</div>
-      <div style={{ width: "100%", height: 140 }}>
-        <ResponsiveContainer width="100%" height={140}>
+      <div style={{ width: "100%", height: 220 }}>
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart
             data={formatted}
-            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 20, left: 0, bottom: 0 }}
           >
             <XAxis
               dataKey="label"
-              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9 }}
+              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 15 }}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
-              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9 }}
+              tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 15 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v} ${unit}`}
-              width={60}
+              width={85}
             />
             <Tooltip
               contentStyle={{
@@ -95,8 +95,8 @@ export function LineGraph({ title, data, field, unit, color, range }) {
                 border: "none",
                 borderRadius: 6,
               }}
-              labelStyle={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}
-              itemStyle={{ color, fontSize: 12 }}
+              labelStyle={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}
+              itemStyle={{ color, fontSize: 14 }}
               formatter={(v) => [`${v} ${unit}`, title]}
             />
             <Line
