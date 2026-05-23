@@ -163,16 +163,21 @@ class SensorController extends ControllerBase {
                 id: { type: "string" },
                 start: { type: "string" },
                 end: { type: "string" },
-                sampleCount: { type: "integer" }
+                sampleCount: { }
             },
-            required: ["id"],
+            required: ["id", "start", "end", "sampleCount"],
             additionalProperties: false
         };
         try {
-            const params = {...req.params, ...req.body};
+            const params = {...req.params, ...req.query, ...req.body};
             const validationResult = this.validate(schema, params);
             if (!validationResult.success) {
                 return next(validationResult.errorDetails);
+            }
+
+            const sensor = await this.service.get(params.id);
+            if (!sensor) {
+                return next(this.notFoundError());
             }
 
             const start = new Date(params.start);
