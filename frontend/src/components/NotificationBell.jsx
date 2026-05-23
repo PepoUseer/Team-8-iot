@@ -580,7 +580,9 @@ function NotificationDropdown({
               title="Click to unmute"
             >
               <BellIcon muted />
-              <span>{muteRemaining} min</span>
+              <span>
+                {muteRemaining > 525600 ? "∞" : `${muteRemaining} min`}
+              </span>
             </button>
           ) : (
             <button
